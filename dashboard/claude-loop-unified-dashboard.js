@@ -208,6 +208,12 @@ let loopConfig = {
       hoursThreshold: 4,
       message: "Long session detected. Consider taking a break or switching to lighter tasks."
     }
+  },
+  reviewSettings: {
+    enabled: false,
+    reviewsBeforeNextTask: 1,
+    reviewMessage: "Please review the work you just completed. Are there any improvements needed?",
+    nextTaskMessage: "Work completed and reviewed. Please proceed to the next task."
   }
 };
 
@@ -2492,24 +2498,24 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
           const category = parsedUrl.query.category;
           const priority = parsedUrl.query.priority;
           const format = parsedUrl.query.format;
-          
+
           let results = todos;
-          
+
           // Text search in todo text and notes
           if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            results = results.filter(t => 
+            results = results.filter(t =>
               t.text.toLowerCase().includes(query) ||
               (t.notes && t.notes.some(note => note.toLowerCase().includes(query)))
             );
           }
-          
+
           // Apply filters
           if (status) results = results.filter(t => t.status === status);
           if (project) results = results.filter(t => t.project === project);
           if (category) results = results.filter(t => t.category === category);
           if (priority) results = results.filter(t => t.priority === priority);
-          
+
           // Return compact format if requested
           if (format === 'compact') {
             const compactResults = results.map(t => ({
@@ -2525,6 +2531,143 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(results));
           }
+        }
+        break;
+
+      case '/api/webhook/status':
+        if (method === 'POST') {
+          const statusData = JSON.parse(body);
+
+          // Validate required fields
+          const validStatuses = ['done', 'idle', 'waiting', 'stuck', 'needs-input'];
+          if (!statusData.status || !validStatuses.includes(statusData.status)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              error: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+            }));
+            return;
+          }
+
+          if (!statusData.session) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Session name is required' }));
+            return;
+          }
+
+          // Get session config to access review settings
+          const config = await getSessionConfig(statusData.session, { loopConfig });
+
+          // Log the status update
+          log.info(`[Webhook] Status update from ${statusData.session}: ${statusData.status}`);
+          if (statusData.context) {
+            log.debug(`[Webhook] Context: ${JSON.stringify(statusData.context)}`);
+          }
+
+          // Initialize session webhook state if needed
+          if (!webhookState[statusData.session]) {
+            webhookState[statusData.session] = {
+              reviewCount: 0,
+              lastStatus: null,
+              lastTaskHash: null
+            };
+          }
+
+          const sessionState = webhookState[statusData.session];
+
+          // Create a hash of the current task context to detect task changes
+          const taskHash = statusData.context?.task ?
+            JSON.stringify(statusData.context.task) : null;
+
+          // Reset review count if task changed
+          if (taskHash && taskHash !== sessionState.lastTaskHash) {
+            sessionState.reviewCount = 0;
+            sessionState.lastTaskHash = taskHash;
+            log.debug(`[Webhook] New task detected for ${statusData.session}, reset review count`);
+          }
+
+          // Handle different status types
+          let response = { received: true };
+
+          switch (statusData.status) {
+            case 'done':
+              // Increment review count
+              sessionState.reviewCount++;
+              const reviewsRequired = config.reviewSettings?.reviewsBeforeNextTask || 0;
+
+              log.info(`[Webhook] Review count for ${statusData.session}: ${sessionState.reviewCount}/${reviewsRequired}`);
+
+              if (reviewsRequired > 0 && sessionState.reviewCount < reviewsRequired) {
+                // Need more reviews - send review request message
+                const reviewMessage = config.reviewSettings?.reviewMessage ||
+                  "Please review the work you just completed. Are there any improvements needed?";
+
+                // Schedule the review message to be sent
+                response.action = 'review';
+                response.message = reviewMessage;
+                response.reviewsRemaining = reviewsRequired - sessionState.reviewCount;
+
+                log.info(`[Webhook] Scheduling review message for ${statusData.session} (${response.reviewsRemaining} reviews remaining)`);
+
+                // Send the review message after a short delay
+                setTimeout(async () => {
+                  try {
+                    await sendCustomMessage(reviewMessage, statusData.session);
+                    log.info(`[Webhook] Sent review message to ${statusData.session}`);
+                  } catch (error) {
+                    log.error(`[Webhook] Failed to send review message: ${error.message}`);
+                  }
+                }, 2000); // 2 second delay
+
+              } else {
+                // Reviews complete or not required - ready for next task
+                sessionState.reviewCount = 0; // Reset for next task
+                response.action = 'next-task';
+
+                const nextTaskMessage = config.reviewSettings?.nextTaskMessage ||
+                  "Work completed and reviewed. Please proceed to the next task.";
+
+                log.info(`[Webhook] Reviews complete for ${statusData.session}, proceeding to next task`);
+
+                // Send next task message after a short delay
+                setTimeout(async () => {
+                  try {
+                    await sendCustomMessage(nextTaskMessage, statusData.session);
+                    log.info(`[Webhook] Sent next task message to ${statusData.session}`);
+                  } catch (error) {
+                    log.error(`[Webhook] Failed to send next task message: ${error.message}`);
+                  }
+                }, 2000); // 2 second delay
+              }
+              break;
+
+            case 'idle':
+            case 'waiting':
+              // Just acknowledge, idle message system will handle this
+              response.action = 'acknowledged';
+              log.debug(`[Webhook] Status ${statusData.status} acknowledged for ${statusData.session}`);
+              break;
+
+            case 'stuck':
+            case 'needs-input':
+              // Send notification or escalation message
+              response.action = 'needs-attention';
+              log.warn(`[Webhook] Session ${statusData.session} needs attention: ${statusData.status}`);
+
+              if (statusData.context?.question) {
+                log.warn(`[Webhook] Question: ${statusData.context.question}`);
+              }
+              break;
+          }
+
+          // Update last status
+          sessionState.lastStatus = statusData.status;
+          sessionState.lastStatusTime = Date.now();
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(response));
+        } else {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Method not allowed. Use POST.' }));
         }
         break;
 
@@ -3596,6 +3739,9 @@ const sessionLoops = new Map(); // session -> { pid, intervalId, paused }
 
 // Track auto-accept timers so they can be cancelled on stop
 const autoAcceptTimers = new Map(); // session -> timeoutId
+
+// Track webhook status for each session
+const webhookState = {}; // session -> { reviewCount, lastStatus, lastTaskHash, lastStatusTime }
 
 // Keep track of active loops in a file for persistence
 const ACTIVE_LOOPS_FILE = path.join(__dirname, 'active-loops.json');

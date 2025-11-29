@@ -53,6 +53,12 @@ const dashboardConditional = {
       enabled: false,
       idleThresholdSeconds: 30,
       message: "What's the status? Please provide a brief update on what you're working on."
+    },
+    reviewSettings: {
+      enabled: false,
+      reviewsBeforeNextTask: 1,
+      reviewMessage: "Please review the work you just completed. Are there any improvements needed?",
+      nextTaskMessage: "Work completed and reviewed. Please proceed to the next task."
     }
   },
 
@@ -236,6 +242,38 @@ const dashboardConditional = {
           </div>
         </div>
 
+        <!-- Review Settings Section -->
+        <h4 style="margin: 20px 0 10px 0;">Review Settings</h4>
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 0 0 10px 0;">
+          Configure how many times Claude should review completed work before moving to next task
+        </p>
+
+        <div class="control-group" style="background: var(--bg-tertiary); padding: 15px; border-radius: 6px;">
+          <div class="checkbox-group">
+            <label style="cursor: pointer;">
+              <input type="checkbox" id="review-enabled" onchange="dashboardConditional.handleCheckboxChange('review')">
+              <span id="review-arrow" style="display: inline-block; width: 12px; pointer-events: none;">▶</span>
+              Enable Review Loop
+            </label>
+          </div>
+
+          <div id="review-settings" style="margin-left: 20px; display: none;">
+            <label style="font-size: 12px;">Number of reviews before next task</label>
+            <input type="number" id="review-count" min="0" max="10" value="1" style="width: 100%; margin-bottom: 10px;" oninput="dashboardConditional.debouncedUpdateConfig()">
+
+            <label style="font-size: 12px;">Review request message</label>
+            <textarea id="review-message" class="auto-resize" style="margin-top: 5px; margin-bottom: 10px;" placeholder="Please review the work you just completed. Are there any improvements needed?" oninput="dashboardConditional.debouncedUpdateConfig()"></textarea>
+
+            <label style="font-size: 12px;">Next task message (after reviews complete)</label>
+            <textarea id="next-task-message" class="auto-resize" style="margin-top: 5px;" placeholder="Work completed and reviewed. Please proceed to the next task." oninput="dashboardConditional.debouncedUpdateConfig()"></textarea>
+
+            <div style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 4px; font-size: 12px;">
+              <strong>How to use:</strong> Claude calls the webhook endpoint with <code>status: "done"</code> when work is complete.
+              The system will automatically send review messages the configured number of times before moving to the next task.
+            </div>
+          </div>
+        </div>
+
         <div style="color: var(--text-secondary); font-size: 12px; margin-top: 20px; text-align: center;">
           ✨ Settings auto-save as you type
         </div>
@@ -384,6 +422,20 @@ const dashboardConditional = {
       if (idleThreshold) idleThreshold.value = this.config.onIdleMessage?.idleThresholdSeconds || 30;
       if (idleMessage) idleMessage.value = this.config.onIdleMessage?.message || this.defaultConfig.onIdleMessage.message;
     }
+
+    // Review settings
+    const reviewEnabled = document.getElementById('review-enabled');
+    if (reviewEnabled) {
+      reviewEnabled.checked = this.config.reviewSettings?.enabled || false;
+      this.handleCheckboxChange('review', true); // true = skip config update to avoid loop
+
+      const reviewCount = document.getElementById('review-count');
+      const reviewMessage = document.getElementById('review-message');
+      const nextTaskMessage = document.getElementById('next-task-message');
+      if (reviewCount) reviewCount.value = this.config.reviewSettings?.reviewsBeforeNextTask || 1;
+      if (reviewMessage) reviewMessage.value = this.config.reviewSettings?.reviewMessage || this.defaultConfig.reviewSettings.reviewMessage;
+      if (nextTaskMessage) nextTaskMessage.value = this.config.reviewSettings?.nextTaskMessage || this.defaultConfig.reviewSettings.nextTaskMessage;
+    }
   },
 
   /**
@@ -496,6 +548,13 @@ const dashboardConditional = {
     this.config.onIdleMessage.enabled = document.getElementById('idle-enabled')?.checked || false;
     this.config.onIdleMessage.idleThresholdSeconds = parseInt(document.getElementById('idle-threshold')?.value || 30);
     this.config.onIdleMessage.message = document.getElementById('idle-message')?.value || this.defaultConfig.onIdleMessage.message;
+
+    // Review settings
+    this.config.reviewSettings = this.config.reviewSettings || {};
+    this.config.reviewSettings.enabled = document.getElementById('review-enabled')?.checked || false;
+    this.config.reviewSettings.reviewsBeforeNextTask = parseInt(document.getElementById('review-count')?.value || 1);
+    this.config.reviewSettings.reviewMessage = document.getElementById('review-message')?.value || this.defaultConfig.reviewSettings.reviewMessage;
+    this.config.reviewSettings.nextTaskMessage = document.getElementById('next-task-message')?.value || this.defaultConfig.reviewSettings.nextTaskMessage;
 
     // Save to global config
     if (window.loopConfig) {

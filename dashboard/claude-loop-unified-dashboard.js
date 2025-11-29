@@ -570,6 +570,8 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
           
           // Quick keyword check on last 2000 chars to decide what analysis we need
           const last2000 = stdout.slice(-2000).toLowerCase();
+          // Activity prompts are always at the very bottom - check last 500 chars only
+          const last500 = stdout.slice(-500).toLowerCase();
 
           // Determine what kind of analysis is needed based on keywords
           const hints = {};
@@ -586,8 +588,8 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
             needsAnalysis = true;
           }
 
-          // Check for activity keywords
-          if (last2000.includes('(esc)') || last2000.includes('esc to interrupt')) {
+          // Check for activity keywords - only need last 500 chars (bottom of screen)
+          if (last500.includes('(esc)') || last500.includes('esc to interrupt')) {
             hints.checkActivity = true;
             needsAnalysis = true;
           }
@@ -3021,9 +3023,11 @@ function analyzeContent(content, session, hints = {}) {
       result.isBusy = sessionCache.activity.result;
       log.debug(`[Cache] Using cached activity detection for ${session}`);
     } else {
-      // Simple keyword check - if we found "esc to interrupt", Claude is busy
-      // No need for expensive regex!
-      result.isBusy = content.toLowerCase().includes('esc to interrupt');
+      // Check only last 20 lines for "esc to interrupt" prompt
+      // The status prompt is always at the bottom, no need to scan entire output
+      const lines = content.split('\n');
+      const last20Lines = lines.slice(-20).join('\n').toLowerCase();
+      result.isBusy = last20Lines.includes('esc to interrupt');
       sessionCache.activity.result = result.isBusy;
       sessionCache.activity.expires = now + CACHE_TTL.activity;
     }

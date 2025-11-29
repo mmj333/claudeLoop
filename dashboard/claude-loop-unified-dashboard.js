@@ -592,12 +592,6 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
             needsAnalysis = true;
           }
 
-          // Check for compact keywords
-          if (last2000.includes("let's compact") || last2000.includes('/compact')) {
-            hints.checkCompact = true;
-            needsAnalysis = true;
-          }
-
           // Check for context keywords
           if (last2000.includes('%') && last2000.includes('context')) {
             hints.checkContext = true;
@@ -626,22 +620,7 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
           if (needsAnalysis && (!interactivePrompt || !interactivePrompt.detected)) {
             log.debug(`[Prompt Detection] Keywords found but no prompt detected for ${tailSession}`);
           }
-          
-          // Handle compact phrase if detected
-          if (hasCompactPhrase) {
-            // Check if we should send compact based on context
-            initContextState(tailSession);
-            const sessionState = contextState.sessions[tailSession];
-            
-            // Check if we've sent a /compact recently (debounce)
-            const now = new Date();
-            const timeSinceLastCompact = sessionState.lastCompactCommandTime ? 
-              (now - sessionState.lastCompactCommandTime) / 1000 / 60 : Infinity; // minutes
-            
-            // Use unified compact function
-            await sendCompactIfNeeded(tailSession, 'lets-compact-phrase');
-          }
-          
+
           // Handle auto-accept if enabled and prompt detected
           if (interactivePrompt && interactivePrompt.detected) {
             log.info(`[Auto-Accept] Interactive prompt detected for ${tailSession}: ${interactivePrompt.type}`);
@@ -2539,7 +2518,7 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
           const statusData = JSON.parse(body);
 
           // Validate required fields
-          const validStatuses = ['done', 'idle', 'waiting', 'stuck', 'needs-input'];
+          const validStatuses = ['done', 'idle', 'waiting', 'stuck', 'needs-input', 'auto-compact'];
           if (!statusData.status || !validStatuses.includes(statusData.status)) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
@@ -2645,6 +2624,22 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
               // Just acknowledge, idle message system will handle this
               response.action = 'acknowledged';
               log.debug(`[Webhook] Status ${statusData.status} acknowledged for ${statusData.session}`);
+              break;
+
+            case 'auto-compact':
+              // Trigger compact command with debounce check
+              response.action = 'compact';
+              log.info(`[Webhook] Auto-compact requested for ${statusData.session}`);
+
+              // Use the existing sendCompactIfNeeded which has built-in debounce
+              setTimeout(async () => {
+                try {
+                  await sendCompactIfNeeded(statusData.session, 'webhook-auto-compact');
+                  log.info(`[Webhook] Triggered compact for ${statusData.session}`);
+                } catch (error) {
+                  log.error(`[Webhook] Failed to trigger compact: ${error.message}`);
+                }
+              }, 1000); // 1 second delay
               break;
 
             case 'stuck':
@@ -2982,59 +2977,6 @@ async function getLoopStatus() {
 }
 
 // Unified content analysis - run all detections in one pass
-/**
- * Sophisticated compact phrase detection that looks only at recent output
- * @param {string} content - Full tmux content
- * @returns {boolean} - True if Claude recently said "let's compact"
- */
-function detectCompactPhrase(content) {
-  // Find input box boundaries (╭─────╮)
-  const inputBoxTopMatch = content.match(/╭─{3,}╮/);
-  if (!inputBoxTopMatch) {
-    log.debug('[Compact Detection] No input box found, skipping');
-    return false;
-  }
-  
-  // Get Claude's RECENT output (last 2000 chars before input box)
-  const inputBoxStartIndex = inputBoxTopMatch.index;
-  const recentOutputStart = Math.max(0, inputBoxStartIndex - 2000);
-  const claudeOutputArea = content.substring(recentOutputStart, inputBoxStartIndex);
-  
-  // Look for "let's compact" in recent output (case insensitive, flexible punctuation)
-  const compactPhrase = "let's compact";
-  const lastCompactIndex = claudeOutputArea.toLowerCase().lastIndexOf(compactPhrase);
-  
-  if (lastCompactIndex === -1) {
-    // Also check for /compact command
-    const slashCompactIndex = claudeOutputArea.toLowerCase().lastIndexOf('/compact');
-    if (slashCompactIndex === -1) {
-      return false;
-    }
-    
-    // For /compact, check if it's followed by alphabet chars
-    let afterCompactText = claudeOutputArea.substring(slashCompactIndex + 8); // length of '/compact'
-    afterCompactText = afterCompactText.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[\d;]+m/g, '');
-    const hasAlphabetChars = /[a-zA-Z]/.test(afterCompactText);
-    
-    log.debug(`[Compact Detection] Found "/compact", has text after: ${hasAlphabetChars}`);
-    return !hasAlphabetChars;
-  }
-  
-  // Check no alphabet text appears after "let's compact"
-  let afterCompactText = claudeOutputArea.substring(lastCompactIndex + compactPhrase.length);
-  // Strip ANSI escape codes before checking
-  afterCompactText = afterCompactText.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[\d;]+m/g, '');
-  const hasAlphabetChars = /[a-zA-Z]/.test(afterCompactText);
-  
-  if (hasAlphabetChars) {
-    log.debug(`[Compact Detection] Found "${compactPhrase}" but has text after, ignoring`);
-    return false;
-  }
-  
-  log.debug(`[Compact Detection] Valid compact phrase detected`);
-  return true;
-}
-
 function analyzeContent(content, session, hints = {}) {
   // Initialize session cache if needed
   if (!analysisState.sessions[session]) {
@@ -3042,7 +2984,6 @@ function analyzeContent(content, session, hints = {}) {
       cache: {
         prompt: { result: null, expires: 0 },
         activity: { result: null, expires: 0 },
-        compact: { result: null, expires: 0 },
         context: { result: null, expires: 0 }
       },
       lastAnalysisTime: 0,
@@ -3119,20 +3060,7 @@ function analyzeContent(content, session, hints = {}) {
       sessionCache.context.expires = now + CACHE_TTL.context;
     }
   }
-  
-  // Only check compact phrase if explicitly hinted
-  if (!hints.skipCompact && hints.checkCompact) {
-    // Check cache first
-    if (sessionCache.compact.expires > now) {
-      result.hasCompactPhrase = sessionCache.compact.result;
-      log.debug(`[Cache] Using cached compact detection for ${session}`);
-    } else {
-      result.hasCompactPhrase = detectCompactPhrase(content);
-      sessionCache.compact.result = result.hasCompactPhrase;
-      sessionCache.compact.expires = now + CACHE_TTL.compact;
-    }
-  }
-  
+
   return result;
 }
 
@@ -3141,7 +3069,6 @@ function analyzeContent(content, session, hints = {}) {
 const CACHE_TTL = {
   prompt: 5000,      // 5 seconds - needs responsiveness
   activity: 2000,    // 2 seconds - changes frequently
-  compact: 60000,    // 60 seconds - rarely changes quickly
   context: 20000     // 20 seconds - changes slowly
 };
 
@@ -3156,7 +3083,6 @@ function getAnalysis(content, session, hints = {}) {
       cache: {
         prompt: { result: null, expires: 0 },
         activity: { result: null, expires: 0 },
-        compact: { result: null, expires: 0 },
         context: { result: null, expires: 0 }
       },
       lastAnalysisTime: 0,
@@ -3693,12 +3619,7 @@ async function getConditionalMessage(sessionName = null) {
     
     // Low context message (high priority - needs action)
     if (config.lowContextMessage?.enabled && context.contextPercent <= config.lowContextMessage.threshold) {
-      let message = config.lowContextMessage.message;
-      // Add auto-compact instruction if enabled
-      if (config.lowContextMessage.autoCompact) {
-        message += '\n\nAlso, when you\'re ready to compact, please reply with this exact phrase: "Let\'s compact!"';
-      }
-      return addAutoFinishInstruction(message);
+      return addAutoFinishInstruction(config.lowContextMessage.message);
     }
   } catch (e) {}
   

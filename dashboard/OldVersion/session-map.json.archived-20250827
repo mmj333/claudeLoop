@@ -1,0 +1,50 @@
+{
+  "claude-loop4": {
+    "conversationId": "44c54378-f4ee-4958-94e6-e48e4f2fa8cb",
+    "workingDirectory": "/home/michael/InfiniQuest/supporter/site/tmp/tools",
+    "setAt": "2025-08-22T02:33:58.939Z",
+    "manual": true
+  },
+  "claude-loop1": {
+    "conversationId": "9834d2f2-00e8-4007-894b-4903219d8327",
+    "workingDirectory": "/home/michael/InfiniQuest",
+    "setAt": "2025-08-25T00:32:30.182Z",
+    "manual": true
+  },
+  "claude-loop8": {
+    "conversationId": "10728c77-d975-4460-b2f7-2588697869c9",
+    "workingDirectory": "/home/michael/InfiniQuest",
+    "setAt": "2025-08-23T20:17:30.894Z",
+    "manual": true
+  },
+  "meow": {
+    "conversationId": "7e1edd1e-6a5a-44bd-9416-90e5167cb2f8",
+    "title": "This session is being continued from a previous co...",
+    "projectPath": "/home/michael/InfiniQuest",
+    "trackedAt": "2025-08-20T01:52:45.136Z"
+  },
+  "claude-loop6": {
+    "conversationId": "4f3415f3-042c-4a2e-ba5f-117d44e16712",
+    "workingDirectory": "/home/michael/Computers_Plus_Repair",
+    "setAt": "2025-08-21T14:56:46.845Z",
+    "manual": true
+  },
+  "claude-loop100": {
+    "conversationId": "6e85fdaa-44b3-4877-a746-8f138420d87d",
+    "workingDirectory": "/home/michael/InfiniQuest",
+    "setAt": "2025-08-21T15:29:28.893Z",
+    "manual": true
+  },
+  "claude-loop9": {
+    "conversationId": "a7251e8b-16e9-460d-8e5f-fc0f245fb93b",
+    "workingDirectory": "/home/michael/InfiniQuest",
+    "setAt": "2025-08-25T00:25:22.789Z",
+    "manual": true
+  },
+  "claude-loop10": {
+    "conversationId": "764d536a-6089-47ed-afc9-a3298bddb7e3",
+    "title": "Untitled",
+    "projectPath": "/home/michael/InfiniQuest/tmp/claudeLoop",
+    "trackedAt": "2025-08-27T13:57:17.957Z"
+  }
+}

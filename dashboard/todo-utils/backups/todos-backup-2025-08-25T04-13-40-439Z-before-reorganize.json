@@ -1,0 +1,67 @@
+[
+  {
+    "id": "meqd6rwrn0ah48tk9ti",
+    "text": "It would be cool to have ToDo lists organized into folders by project. Also being able to support sub-tasks ",
+    "status": "completed",
+    "claude_session": "claude-loop9",
+    "created_at": "2025-08-25T00:13:54.507Z",
+    "claude_completed_at": "2025-08-25T04:07:31.364Z",
+    "user_approved_at": "2025-08-25T04:07:31.364Z",
+    "priority": "normal",
+    "category": "other",
+    "notes": [],
+    "order": 0,
+    "parentId": null
+  },
+  {
+    "id": "meqd8655c390puatzcf",
+    "text": "(Default project folders could = 1 per claude loop session, with the same name) and the relevant one could be shown on the top of the to-do list when that session is active. ",
+    "status": "completed",
+    "claude_session": "claude-loop9",
+    "created_at": "2025-08-25T00:14:59.609Z",
+    "claude_completed_at": "2025-08-25T04:07:31.364Z",
+    "user_approved_at": "2025-08-25T04:07:31.364Z",
+    "priority": "normal",
+    "category": "other",
+    "notes": [],
+    "order": 1,
+    "parentId": "group-1756094856535-0.3468871508499518"
+  },
+  {
+    "id": "meqdbxk1k04lip0wms",
+    "text": "Also, I'd like claude's checkbox and my checkbox to be on the let side of this to-do list. Instead of over on the right side by the delete button. It just feels better for some reason to have checkboxes on the left. That's how I've been doing it my whole life. ",
+    "status": "completed",
+    "claude_session": "claude-loop9",
+    "created_at": "2025-08-25T00:17:55.105Z",
+    "claude_completed_at": "2025-08-25T04:07:31.364Z",
+    "user_approved_at": "2025-08-25T04:07:31.364Z",
+    "priority": "normal",
+    "category": "other",
+    "notes": [],
+    "order": 2,
+    "parentId": null
+  },
+  {
+    "id": "meqddokyr9xcaq6j7",
+    "text": "need to be able to re-sort this list",
+    "status": "completed",
+    "claude_session": "claude-loop9",
+    "created_at": "2025-08-25T00:19:16.786Z",
+    "claude_completed_at": "2025-08-25T04:07:31.364Z",
+    "user_approved_at": "2025-08-25T04:07:31.364Z",
+    "priority": "normal",
+    "category": "other",
+    "notes": [],
+    "order": 3,
+    "parentId": "group-1756094856535-0.3468871508499518"
+  },
+  {
+    "id": "group-1756094856535-0.3468871508499518",
+    "text": "Other Tasks",
+    "status": "pending",
+    "priority": "medium",
+    "project": "general",
+    "created": "2025-08-25T04:07:36.535Z",
+    "order": 4
+  }
+]

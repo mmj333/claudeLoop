@@ -1,0 +1,40 @@
+# Logs
+logs/
+*.log
+
+# Node modules
+node_modules/
+
+# Configuration files (may contain sensitive data)
+dashboard/loop-config-*.json
+dashboard/session-map.json
+dashboard/active-loops.json
+dashboard/conversation-names.json
+dashboard/conversation-structure-report.json
+.claude/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Data files
+data/
+*.sqlite
+*.db
+
+# Backup files
+dashboard-backup/
+dashboard-v2/
+archive/
+*-backup/
+*.backup
+*.bak

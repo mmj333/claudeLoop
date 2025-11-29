@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claude Loop Unified Control</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Apply theme immediately to prevent flash
+    (function() {
+      const themeMode = localStorage.getItem('themeMode') || 'auto';
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      let isDark = false;
+      
+      if (themeMode === 'auto') {
+        isDark = prefersDark;
+      } else if (themeMode === 'dark') {
+        isDark = true;
+      }
+      
+      if (isDark) {
+        document.documentElement.classList.add('dark-mode');
+      }
+    })();
+  </script>
+  <style>
+    /* Critical inline styles to prevent flash */
+    html.dark-mode input,
+    html.dark-mode textarea,
+    html.dark-mode select {
+      background: #2a2a2a !important;
+      color: #e0e0e0 !important;
+      border: 1px solid #444 !important;
+    }
+  </style>
+  <link rel="stylesheet" href="/dashboard-styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎮 Claude Loop Control Dashboard</h1>
+      <div class="header-actions">
+        <button id="toggle-dark-mode" class="btn btn-secondary" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+          <span id="dark-mode-icon">🌙</span>
+          <span id="dark-mode-text" style="font-size: 12px; margin-left: 4px;">Auto</span>
+        </button>
+        <button onclick="stopAllLoops()" class="btn btn-danger">🛑 Stop All Loops</button>
+        <button onclick="stopAllSessions()" class="btn btn-danger">💀 Kill All Sessions</button>
+      </div>
+    </div>
+    
+    <div class="grid">
+      <!-- Left Column: Control Panel -->
+      <div class="left-column">
+        <!-- Session Selector -->
+        <div class="card session-selector">
+          <h3>📦 Session</h3>
+          <select id="session-select" onchange="selectSession(this.value)">
+            <option value="">Loading sessions...</option>
+          </select>
+          <div class="session-actions">
+            <button onclick="createNewSession()" class="btn btn-primary">➕ New</button>
+            <button onclick="killCurrentSession()" class="btn btn-danger">🗑️ Kill</button>
+            <button onclick="renameSession()" class="btn btn-secondary">✏️ Rename</button>
+          </div>
+        </div>
+
+        <!-- Claude Control -->
+        <div class="card">
+          <h3>🤖 Claude Control</h3>
+          <div class="control-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button onclick="startClaude()" class="btn btn-success" title="Start Claude in current session">
+              ▶️ Start Claude
+            </button>
+            <button onclick="stopClaude()" class="btn btn-danger" title="Stop Claude (Ctrl+C)">
+              ⏹️ Stop Claude
+            </button>
+            <button onclick="restartClaude()" class="btn btn-warning" title="Stop and restart Claude">
+              🔄 Restart Claude
+            </button>
+            <button onclick="sendCompact()" class="btn btn-info" title="Send /compact command">
+              📦 Compact
+            </button>
+          </div>
+        </div>
+
+        <!-- Loop Control -->
+        <div class="card">
+          <h3>🔄 Loop Control</h3>
+          <div class="loop-status" id="loop-status">
+            <span class="status-indicator" id="status-indicator">●</span>
+            <span id="status-text">Not running</span>
+            <div id="loop-countdown" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: none;">
+              Next message in: <span id="countdown-time" style="font-weight: bold; color: var(--text-primary);">--:--</span>
+            </div>
+          </div>
+          <div class="loop-settings" style="margin: 10px 0; padding: 10px; background: var(--bg-secondary); border-radius: 6px;">
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label style="font-size: 12px;">Delay between messages (minutes):</label>
+              <input type="number" id="delay-minutes" value="10" min="1" max="120" onchange="updateDelay(this.value)" style="width: 60px; padding: 2px 4px; font-size: 12px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;" title="When checked: First message after full delay. When unchecked: First message after 30 seconds (for quick testing)">
+                <input type="checkbox" id="start-with-delay" checked onchange="updateStartWithDelay(this.checked)">
+                Start with full delay <span style="color: var(--text-secondary); font-size: 11px;">(uncheck for 30s quick start)</span>
+              </label>
+            </div>
+          </div>
+          <div class="control-buttons">
+            <button onclick="startOrResumeLoop()" class="btn btn-success" id="start-resume-btn">▶️ Start</button>
+            <button onclick="pauseLoop()" class="btn btn-warning" id="pause-btn">⏸️ Pause</button>
+            <button onclick="stopLoop()" class="btn btn-danger">⏹️ Stop</button>
+          </div>
+        </div>
+
+
+
+        <!-- Schedule with full visualization -->
+        <div class="card schedule-card collapsed" id="schedule-card">
+          <h3 onclick="toggleSchedule()" style="cursor: pointer;">
+            📅 Schedule <span class="toggle">▶</span>
+          </h3>
+          <div class="schedule-content" id="schedule-content" style="display: none;">
+            <!-- Tool Selection -->
+            <div class="schedule-tools">
+              <label class="tool-option">
+                <input type="radio" name="schedule-tool" value="active" checked>
+                <span class="tool-label active-tool">✅ Active</span>
+              </label>
+              <label class="tool-option">
+                <input type="radio" name="schedule-tool" value="inactive">
+                <span class="tool-label inactive-tool">⛔ Inactive</span>
+              </label>
+              <div class="precision-selector">
+                <label>Precision:</label>
+                <select id="schedule-precision">
+                  <option value="1">1 min</option>
+                  <option value="5">5 min</option>
+                  <option value="10">10 min</option>
+                  <option value="15" selected>15 min</option>
+                  <option value="30">30 min</option>
+                  <option value="60">1 hour</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Timezone Display -->
+            <div class="timezone-display" id="timezone-display">
+              Timezone: Loading...
+            </div>
+            
+            <!-- Timeline Visualization -->
+            <div class="timeline-container">
+              <div id="time-tooltip" class="time-tooltip"></div>
+              
+              <!-- AM Timeline -->
+              <div class="timeline-section">
+                <div class="timeline-label">AM</div>
+                <div id="schedule-timeline-am" class="schedule-timeline">
+                  <!-- Timeline blocks will be generated here -->
+                </div>
+                <div class="timeline-hours">
+                  <span style="left: 0%;">12</span>
+                  <span style="left: 8.33%;">1</span>
+                  <span style="left: 16.67%;">2</span>
+                  <span style="left: 25%;">3</span>
+                  <span style="left: 33.33%;">4</span>
+                  <span style="left: 41.67%;">5</span>
+                  <span style="left: 50%;">6</span>
+                  <span style="left: 58.33%;">7</span>
+                  <span style="left: 66.67%;">8</span>
+                  <span style="left: 75%;">9</span>
+                  <span style="left: 83.33%;">10</span>
+                  <span style="left: 91.67%;">11</span>
+                </div>
+              </div>
+              
+              <!-- PM Timeline -->
+              <div class="timeline-section">
+                <div class="timeline-label">PM</div>
+                <div id="schedule-timeline-pm" class="schedule-timeline">
+                  <!-- Timeline blocks will be generated here -->
+                </div>
+                <div class="timeline-hours">
+                  <span style="left: 0%;">12</span>
+                  <span style="left: 8.33%;">1</span>
+                  <span style="left: 16.67%;">2</span>
+                  <span style="left: 25%;">3</span>
+                  <span style="left: 33.33%;">4</span>
+                  <span style="left: 41.67%;">5</span>
+                  <span style="left: 50%;">6</span>
+                  <span style="left: 58.33%;">7</span>
+                  <span style="left: 66.67%;">8</span>
+                  <span style="left: 75%;">9</span>
+                  <span style="left: 83.33%;">10</span>
+                  <span style="left: 91.67%;">11</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Quick Presets -->
+            <div class="schedule-presets">
+              <button onclick="dashboardSchedule.setAllHours(true)" class="btn btn-sm">All Active</button>
+              <button onclick="dashboardSchedule.setAllHours(false)" class="btn btn-sm">All Inactive</button>
+              <button onclick="dashboardSchedule.setWorkHours()" class="btn btn-sm">9-5</button>
+              <button onclick="dashboardSchedule.setNightHours()" class="btn btn-sm">Night</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conditional Messages -->
+        <div class="card conditional-card collapsed" id="conditional-card">
+          <h3 onclick="dashboardConditional.toggleCard()" style="cursor: pointer;">
+            ⚡ Conditional Messages <span class="toggle">▶</span>
+          </h3>
+          <div class="conditional-content" id="conditional-content" style="display: none;">
+            <!-- Content generated by dashboard-conditional.js -->
+          </div>
+        </div>
+
+        <!-- Log Monitor Controls -->
+        <div class="card">
+          <h3>📝 Log Monitor</h3>
+          <div class="log-monitor-controls">
+            <div class="monitor-status" id="monitor-status">
+              <span class="status-indicator running" id="monitor-indicator">●</span>
+              <span id="monitor-text">Running</span>
+            </div>
+            <div class="control-buttons">
+              <button onclick="startLogMonitor()" class="btn btn-success btn-sm">▶️ Start</button>
+              <button onclick="stopLogMonitor()" class="btn btn-danger btn-sm">⏹️ Stop</button>
+              <button onclick="listLogMonitors()" class="btn btn-info btn-sm">📋 List</button>
+            </div>
+            <div class="monitor-info" id="monitor-info">
+              <small>Monitoring: <span id="monitor-files">claude-loop*.log</span></small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Monitoring -->
+      <div class="right-column">
+        <!-- Working Directory -->
+        <div class="card" style="padding: 12px 20px; margin-bottom: 15px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label style="margin: 0; font-weight: 600; color: var(--accent);">📁 Working Directory:</label>
+            <input type="text" id="working-directory" 
+                   style="flex: 1; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-primary);"
+                   placeholder="Select a folder for Claude to work in" 
+                   onchange="updateWorkingDirectory(this.value)">
+            <button onclick="useSessionCwd()" class="btn btn-sm btn-secondary" title="Use current session's working directory" id="session-cwd-btn">
+              📍
+            </button>
+            <button onclick="browseDirectory()" class="btn btn-sm btn-secondary" title="Browse for folder">
+              📂
+            </button>
+          </div>
+        </div>
+        
+        <!-- Tabbed Monitor -->
+        <div class="card monitor-card">
+          <div class="card-header">
+            <div class="tab-buttons">
+              <button id="tmux-tab" class="tab-button active" onclick="switchTab('tmux')">
+                🖥️ Tmux
+              </button>
+              <button id="chat-tab" class="tab-button" onclick="switchTab('chat')">
+                💬 Chat
+              </button>
+            </div>
+            <div class="monitor-controls">
+              <select id="tmux-lines" onchange="updateTmuxLines()" class="btn btn-sm" style="padding: 4px 8px; margin-right: 8px;">
+                <option value="200">200 lines</option>
+                <option value="500" selected>500 lines</option>
+                <option value="1000">1000 lines</option>
+                <option value="2000">2000 lines</option>
+                <option value="0">All lines</option>
+              </select>
+              <button onclick="refreshCurrentTab()" class="btn btn-sm btn-secondary">🔄</button>
+              <button onclick="clearCurrentTab()" class="btn btn-sm btn-secondary">🗑️</button>
+              <label>
+                <input type="checkbox" id="auto-scroll" checked> Auto-scroll
+              </label>
+            </div>
+          </div>
+          
+          <!-- Tmux Tab Content -->
+          <div id="tmux-panel" class="tab-panel active">
+            <div class="tmux-content" id="tmux-content">
+              <div class="loading">Loading tmux output...</div>
+            </div>
+            <div class="context-status-bar" style="display: grid; grid-template-columns: 0.5fr auto 1.5fr; align-items: center;">
+              <div></div> <!-- Smaller empty left section -->
+              <div class="tmux-controls" style="display: flex; gap: 4px;">
+                <button onclick="sendTmuxKey('C-c')" class="btn btn-xs" title="Send Ctrl+C">Ctrl+C</button>
+                <button onclick="sendTmuxKey('Escape')" class="btn btn-xs" title="Send Escape">Esc</button>
+                <button onclick="sendTmuxKey('Enter')" class="btn btn-xs" title="Send Enter">Enter</button>
+                <button onclick="sendTmuxKey('Left')" class="btn btn-xs" title="Send Left arrow">←</button>
+                <button onclick="sendTmuxKey('Up')" class="btn btn-xs" title="Send Up arrow">↑</button>
+                <button onclick="sendTmuxKey('Down')" class="btn btn-xs" title="Send Down arrow">↓</button>
+                <button onclick="sendTmuxKey('Right')" class="btn btn-xs" title="Send Right arrow">→</button>
+              </div>
+              <div class="context-compact" style="justify-self: end;">
+                <span class="context-label" id="context-main-label">Context:</span>
+                <div class="context-bar-inline" style="width: 80px;">
+                  <div class="context-fill-inline" id="context-fill-inline" style="width: 100%"></div>
+                </div>
+                <span class="context-percent" id="context-percent">100%</span>
+                <span class="context-separator">|</span>
+                <span class="context-label" id="context-used-label">Used:</span>
+                <span class="context-estimate" id="context-estimate">~0%</span>
+              </div>
+            </div>
+            <div class="custom-message-input">
+              <textarea id="custom-message" placeholder="Enter message to send to Claude..." rows="2"></textarea>
+              <button onclick="sendCustomMessage()" class="btn btn-primary">Send Message</button>
+            </div>
+          </div>
+          
+          <!-- Chat Tab Content -->
+          <div id="chat-panel" class="tab-panel" style="display: none;">
+            <div class="chat-controls" style="padding: 8px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
+              <button onclick="autoAssociateConversation()" class="btn btn-sm" title="Auto-detect conversation from tmux content">
+                🔍 Auto-detect conversation
+              </button>
+              <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 11px; color: var(--text-secondary);">Font size:</label>
+                <select id="chat-font-size" onchange="updateChatFontSize()" style="padding: 2px 6px; font-size: 11px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px;">
+                  <option value="10">10px</option>
+                  <option value="11" selected>11px</option>
+                  <option value="12">12px</option>
+                  <option value="13">13px</option>
+                  <option value="14">14px</option>
+                  <option value="15">15px</option>
+                  <option value="16">16px</option>
+                  <option value="18">18px</option>
+                  <option value="20">20px</option>
+                  <option value="22">22px</option>
+                  <option value="24">24px</option>
+                  <option value="27">27px</option>
+                </select>
+              </div>
+              <div id="conversation-association" style="text-align: right; font-size: 12px; color: var(--text-muted);">
+                <!-- Association status will be shown here -->
+              </div>
+            </div>
+            <div class="chat-content" id="chat-content">
+              <div class="loading">Loading chat messages...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversations Tree (moved to right column for more width) -->
+        <div class="card conversations-card collapsed" id="conversations-card">
+          <h3 onclick="dashboardConversations.togglePanel()" style="cursor: pointer;">
+            🗂️ Conversations <span class="toggle">▶</span>
+          </h3>
+          <div class="conversations-content" id="conversations-content" style="display: none;">
+            <div class="conversation-controls" style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+              <button onclick="dashboardConversations.refresh()" class="btn btn-sm btn-secondary" 
+                      title="Quick refresh - Updates the list using cached data. Fast but may miss very recent changes.">
+                🔄 Refresh
+              </button>
+              <button onclick="dashboardConversations.fullRefresh()" class="btn btn-sm btn-warning" 
+                      title="Full scan - Reads all conversation files to rebuild the cache. Slower but finds all changes, parent-child relationships, and updates titles. Use after creating new conversations or forking.">
+                📊 Full Scan
+              </button>
+              <button onclick="dashboardConversations.autoSelectConversation()" class="btn btn-sm btn-info"
+                      title="Auto-select - Automatically selects the conversation for the current Claude session. Use this to sync the chat view with your active conversation.">
+                🎯 Auto-Select
+              </button>
+              <input type="text" id="conversation-search" placeholder="Search conversations..." 
+                     style="flex: 1; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary); color: var(--text-primary);"
+                     onkeyup="dashboardConversations.filterConversations(this.value)">
+            </div>
+            <div id="conversation-tree" style="max-height: 500px; overflow-y: auto;">
+              <!-- Tree will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Modal for Schedule Editor -->
+    <div id="schedule-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Schedule Configuration</h2>
+          <span class="close" onclick="closeScheduleModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <!-- Schedule form will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include external scripts -->
+  <script src="/dashboard-utils.js"></script>
+  <script src="/dashboard-api.js"></script>
+  <script src="/dashboard-schedule.js"></script>
+  <script src="/dashboard-conditional.js"></script>
+  <script src="/dashboard-conversations.js"></script>
+  <script src="/session-state.js"></script>
+  
+  <!-- Initialize dashboard -->
+  <script>
+    // Global state - currentSession managed by sessionState
+    let currentSession = null; // Will be set after loading sessions
+    let loopConfig = {};
+    let contextInterval = null;
+    let logInterval = null;
+    let currentTab = 'tmux'; // Track current active tab
+    
+    // Initialize schedule minutes globally
+    window.scheduleMinutes = new Array(1440).fill(true);
+    
+    // Font size control for chat
+    window.updateChatFontSize = function() {
+      const select = document.getElementById('chat-font-size');
+      if (!select) return;
+      
+      const fontSize = select.value + 'px';
+      
+      // Update all message bubbles
+      const style = document.createElement('style');
+      style.id = 'chat-font-size-override';
+      
+      // Remove existing override if present
+      const existing = document.getElementById('chat-font-size-override');
+      if (existing) {
+        existing.remove();
+      }
+      
+      style.innerHTML = `
+        .message-bubble {
+          font-size: ${fontSize} !important;
+        }
+        .message-timestamp {
+          font-size: ${parseInt(select.value) - 2}px !important;
+        }
+        .message-bubble code {
+          font-size: ${parseInt(select.value) - 1}px !important;
+        }
+        .message-bubble pre {
+          font-size: ${parseInt(select.value) - 1}px !important;
+        }
+      `;
+      
+      document.head.appendChild(style);
+      
+      // Save preference
+      localStorage.setItem('chat-font-size', select.value);
+    };
+    
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('Initializing dashboard...');
+      
+      // Load sessions
+      await loadSessions();
+      
+      // Load initial config
+      await loadConfig();
+      
+      // Initialize conditional messaging module
+      if (window.dashboardConditional) {
+        dashboardConditional.init();
+      }
+      
+      // Start monitoring
+      startMonitoring();
+      
+      // Theme management
+      updateTheme();
+      
+      // Listen for browser theme changes
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+          const themeMode = localStorage.getItem('themeMode');
+          if (!themeMode || themeMode === 'auto') {
+            updateTheme();
+          }
+        });
+      }
+      
+      // Restore saved font size preference
+      const savedFontSize = localStorage.getItem('chat-font-size');
+      if (savedFontSize) {
+        const select = document.getElementById('chat-font-size');
+        if (select) {
+          select.value = savedFontSize;
+          updateChatFontSize();
+        }
+      }
+    });
+    
+    // Session management
+    async function loadSessions() {
+      try {
+        const response = await dashboardAPI.getTmuxSessions();
+        const sessions = response.sessions || [];
+        const sessionsWithNames = response.sessionsWithNames || [];
+        const select = document.getElementById('session-select');
+        
+        // Initialize session state with available sessions
+        currentSession = await window.sessionState.initialize(sessions);
+        
+        select.innerHTML = '';
+        if (sessions.length > 0) {
+          // Use enhanced format if available
+          if (sessionsWithNames.length > 0) {
+            sessionsWithNames.forEach(session => {
+              const option = document.createElement('option');
+              option.value = session.id;
+              if (session.hasCustomName) {
+                option.innerHTML = `<span class="session-custom-name">${session.name}</span> <span class="session-id">(${session.id})</span>`;
+                option.textContent = `${session.name} (${session.id})`;
+              } else {
+                option.textContent = session.id;
+              }
+              if (session.id === currentSession) {
+                option.selected = true;
+              }
+              select.appendChild(option);
+            });
+          } else {
+            // Fallback to simple format
+            sessions.forEach(session => {
+              const option = document.createElement('option');
+              option.value = session;
+              option.textContent = session;
+              if (session === currentSession) {
+                option.selected = true;
+              }
+              select.appendChild(option);
+            });
+          }
+          
+          // Make sure window.currentSession is set for other modules
+          window.currentSession = currentSession;
+        } else {
+          select.innerHTML = '<option value="">No sessions found</option>';
+          currentSession = null;
+          window.currentSession = null;
+        }
+      } catch (error) {
+        console.error('Failed to load sessions:', error);
+      }
+    }
+    
+    async function selectSession(session) {
+      // Use session state manager
+      if (window.sessionState.setCurrentSession(session)) {
+        currentSession = session;
+        window.currentSession = session; // Keep global in sync
+        await loadConfig();
+        await updateStatus();
+        await refreshTmux();
+      }
+    }
+    
+    async function createNewSession() {
+      const name = prompt('Enter session name:');
+      if (!name) return;
+      
+      try {
+        await dashboardAPI.createTmuxSession(name);
+        await loadSessions();
+        // Use session state manager
+        window.sessionState.setCurrentSession(name);
+        currentSession = name;
+        window.currentSession = name;
+        document.getElementById('session-select').value = name;
+        await loadConfig();
+      } catch (error) {
+        alert('Failed to create session: ' + error.message);
+      }
+    }
+    
+    async function killCurrentSession() {
+      if (!currentSession) {
+        console.warn('No session selected');
+        return;
+      }
+      
+      if (!confirm(`Kill session '${currentSession}'?`)) return;
+      
+      try {
+        await dashboardAPI.killTmuxSession(currentSession);
+        await loadSessions();
+      } catch (error) {
+        alert('Failed to kill session: ' + error.message);
+      }
+    }
+    
+    async function renameSession() {
+      // Get the current session name/custom name
+      const currentName = loopConfig.customName || currentSession;
+      const newName = prompt('Enter new name for session:', currentName);
+      
+      if (!newName || newName === currentName) return;
+      
+      // Save the custom name to config
+      loopConfig.customName = newName;
+      await saveConfig();
+      
+      // Update the session dropdown to show the new name
+      const select = document.getElementById('session-select');
+      const option = select.querySelector(`option[value="${currentSession}"]`);
+      if (option) {
+        option.textContent = `${newName} (${currentSession})`;
+      }
+    }
+    
+    // Loop control
+    async function startOrResumeLoop() {
+      try {
+        const status = await dashboardAPI.getStatus(currentSession);
+        // If paused, resume. Otherwise, start with config
+        if (status.paused) {
+          await dashboardAPI.sendControl('resume', currentSession);
+        } else {
+          // When starting fresh, send the config
+          await dashboardAPI.post('/api/control', { 
+            action: 'start', 
+            session: currentSession,
+            config: loopConfig 
+          });
+        }
+        await updateStatus();
+      } catch (error) {
+        console.error('Failed to start/resume loop:', error.message);
+      }
+    }
+    
+    async function stopLoop() {
+      try {
+        await dashboardAPI.sendControl('stop', currentSession);
+        await updateStatus();
+      } catch (error) {
+        console.error('Failed to stop loop:', error.message);
+      }
+    }
+    
+    async function pauseLoop() {
+      try {
+        await dashboardAPI.sendControl('pause', currentSession);
+        await updateStatus();
+      } catch (error) {
+        console.error('Failed to pause loop:', error.message);
+      }
+    }
+    
+    async function stopAllLoops() {
+      if (!confirm('Stop all running loops?')) return;
+      
+      try {
+        await dashboardAPI.sendControl('stop-all-loops');
+        await updateStatus();
+      } catch (error) {
+        alert('Failed to stop all loops: ' + error.message);
+      }
+    }
+    
+    async function stopAllSessions() {
+      if (!confirm('Kill all tmux sessions? This will terminate everything!')) return;
+      
+      try {
+        await dashboardAPI.sendControl('stop-all-sessions');
+        await loadSessions();
+      } catch (error) {
+        alert('Failed to stop all sessions: ' + error.message);
+      }
+    }
+    
+    // Configuration
+    async function loadConfig() {
+      try {
+        const config = await dashboardAPI.getConfig(currentSession);
+        loopConfig = config;
+        
+        // Update UI
+        document.getElementById('working-directory').value = config.workingDirectory || '';
+        document.getElementById('delay-minutes').value = config.delayMinutes || 10;
+        
+        // Try to detect CWD from session if working directory is empty
+        if (!config.workingDirectory) {
+          detectSessionCwd();
+        }
+        document.getElementById('start-with-delay').checked = config.startWithDelay !== false;
+        document.getElementById('custom-message').value = config.customMessage || '';
+        
+        // Load saved tmux lines selection
+        if (config.tmuxLines && document.getElementById('tmux-lines')) {
+          document.getElementById('tmux-lines').value = config.tmuxLines;
+        }
+        
+        // Load schedule if present
+        if (config.schedule && config.schedule.minutes && Array.isArray(config.schedule.minutes)) {
+          window.scheduleMinutes = [...config.schedule.minutes];
+          
+          // Update precision selector if present
+          if (config.schedule.precision) {
+            const precisionSelect = document.getElementById('schedule-precision');
+            if (precisionSelect) {
+              precisionSelect.value = config.schedule.precision;
+            }
+          }
+          
+          // Redraw timeline if schedule is visible
+          const scheduleCard = document.getElementById('schedule-card');
+          if (scheduleCard && !scheduleCard.classList.contains('collapsed')) {
+            if (window.dashboardSchedule) {
+              dashboardSchedule.initializeTimeline();
+            }
+          }
+        }
+        
+        // Load conditional messages if present
+        if (config.conditionalMessages && window.dashboardConditional) {
+          dashboardConditional.config = { ...dashboardConditional.defaultConfig, ...config.conditionalMessages };
+          dashboardConditional.loadConfigIntoUI();
+        }
+      } catch (error) {
+        console.error('Failed to load config:', error);
+      }
+    }
+    
+    async function updateDelay(minutes) {
+      loopConfig.delayMinutes = parseInt(minutes);
+      await saveConfig();
+    }
+    
+    async function updateStartWithDelay(checked) {
+      console.log('Updating startWithDelay to:', checked);
+      loopConfig.startWithDelay = checked;
+      await saveConfig();
+      console.log('Config saved, startWithDelay is now:', loopConfig.startWithDelay);
+    }
+    
+    async function updateWorkingDirectory(directory) {
+      loopConfig.workingDirectory = directory || '/home/michael/InfiniQuest';
+      await saveConfig();
+    }
+    
+    async function detectSessionCwd() {
+      try {
+        // Get tmux pane's current directory
+        const { stdout } = await dashboardAPI.request('/api/tmux-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            session: currentSession,
+            command: 'pwd'
+          })
+        });
+        // Update button tooltip if we found a CWD
+        const btn = document.getElementById('session-cwd-btn');
+        if (btn && stdout) {
+          btn.title = `Use session CWD: ${stdout.trim()}`;
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+    
+    async function useSessionCwd() {
+      // Try to get current session's working directory from tmux
+      try {
+        const result = await dashboardAPI.request('/api/tmux-pane-cwd', {
+          method: 'GET'
+        });
+        if (result.cwd) {
+          document.getElementById('working-directory').value = result.cwd;
+          await updateWorkingDirectory(result.cwd);
+        }
+      } catch (e) {
+        console.warn('Could not detect session working directory');
+      }
+    }
+    
+    async function browseDirectory() {
+      // Simple prompt for now, could be enhanced with a file browser later
+      const currentPath = document.getElementById('working-directory').value;
+      const newPath = prompt('Enter directory path:', currentPath || '/home/michael');
+      if (newPath) {
+        document.getElementById('working-directory').value = newPath;
+        await updateWorkingDirectory(newPath);
+      }
+    }
+    
+    async function saveConfig() {
+      try {
+        // Add schedule minutes to config if they exist
+        if (window.scheduleMinutes) {
+          loopConfig.schedule = {
+            enabled: true,
+            minutes: window.scheduleMinutes,
+            precision: parseInt(document.getElementById('schedule-precision')?.value || '15'),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          };
+        }
+        await dashboardAPI.saveConfig(loopConfig, currentSession);
+      } catch (error) {
+        console.error('Failed to save config:', error);
+      }
+    }
+    
+    // Make functions globally available for modules and onclick handlers
+    window.saveConfig = saveConfig;
+    window.updateTmuxLines = updateTmuxLines;
+    window.startClaude = startClaude;
+    window.stopClaude = stopClaude;
+    window.restartClaude = restartClaude;
+    window.sendCompact = sendCompact;
+    window.updateWorkingDirectory = updateWorkingDirectory;
+    window.useSessionCwd = useSessionCwd;
+    window.browseDirectory = browseDirectory;
+    
+    // Send tmux key commands
+    async function sendTmuxKey(key) {
+      try {
+        const session = currentSession || 'claude-loop1';
+        await dashboardAPI.sendTmuxKey(session, key);
+        // Refresh tmux output after a short delay
+        setTimeout(refreshTmux, 200);
+      } catch (error) {
+        console.error('Failed to send key:', error);
+        // Don't show alert for key presses, just log the error
+      }
+    }
+    
+    // Custom message
+    async function sendCustomMessage() {
+      const message = document.getElementById('custom-message').value.trim();
+      if (!message) {
+        console.warn('Please enter a message');
+        return;
+      }
+      
+      try {
+        await dashboardAPI.sendMessage(message, currentSession);
+        document.getElementById('custom-message').value = '';
+        setTimeout(refreshTmux, 500);
+      } catch (error) {
+        alert('Failed to send message: ' + error.message);
+      }
+    }
+    
+    // Status updates
+    async function updateStatus() {
+      try {
+        const status = await dashboardAPI.getStatus(currentSession);
+        
+        const indicator = document.getElementById('status-indicator');
+        const text = document.getElementById('status-text');
+        const countdownDiv = document.getElementById('loop-countdown');
+        const countdownTime = document.getElementById('countdown-time');
+        const startBtn = document.getElementById('start-resume-btn');
+        
+        if (status.running) {
+          indicator.style.color = '#4CAF50';
+          
+          if (status.paused) {
+            text.textContent = 'Paused';
+            // Change button to Resume when paused
+            if (startBtn) startBtn.innerHTML = '▶️ Resume';
+            
+            // Check for pause file to get remaining time
+            try {
+              const pauseInfo = await fetch('/api/pause-status').then(r => r.json());
+              if (pauseInfo && pauseInfo.loops && pauseInfo.loops[currentSession]) {
+                const remaining = pauseInfo.loops[currentSession].timeRemaining;
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                countdownTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} (paused)`;
+                countdownDiv.style.display = 'block';
+              } else {
+                countdownDiv.style.display = 'none';
+              }
+            } catch (e) {
+              countdownDiv.style.display = 'none';
+            }
+          } else {
+            text.textContent = 'Running';
+            if (startBtn) startBtn.innerHTML = '▶️ Start';
+            
+            // Get loop-specific timing info
+            try {
+              const loopStatus = await fetch('/api/loop/status').then(r => r.json());
+              const sessionLoop = loopStatus.loops[currentSession];
+              
+              if (sessionLoop && sessionLoop.nextMessageTime) {
+                const nextTime = new Date(sessionLoop.nextMessageTime);
+                const now = new Date();
+                const diff = nextTime - now;
+                
+                if (diff > 0) {
+                  const minutes = Math.floor(diff / 60000);
+                  const seconds = Math.floor((diff % 60000) / 1000);
+                  countdownTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                  countdownDiv.style.display = 'block';
+                } else {
+                  countdownTime.textContent = 'Sending...';
+                  countdownDiv.style.display = 'block';
+                }
+              } else {
+                countdownDiv.style.display = 'none';
+              }
+            } catch (loopError) {
+              console.error('Failed to get loop status:', loopError);
+              countdownDiv.style.display = 'none';
+            }
+          }
+        } else {
+          indicator.style.color = '#f44336';
+          text.textContent = 'Stopped';
+          countdownDiv.style.display = 'none';
+          if (startBtn) startBtn.innerHTML = '▶️ Start';
+        }
+      } catch (error) {
+        console.error('Failed to update status:', error);
+      }
+    }
+    
+    // Context monitoring
+    async function updateContext() {
+      try {
+        const context = await dashboardAPI.getContext(currentSession);
+        
+        const percent = context.contextPercent || 100;
+        const charsSinceCompact = context.charsSinceCompact || 0;
+        
+        // Calculate estimated context usage
+        // Rough estimate: 1 token ≈ 4 characters for English text
+        // Claude's context window is ~200k tokens = ~800k characters
+        const maxChars = 800000;
+        const estimatedUsage = Math.min(100, Math.round((charsSinceCompact / maxChars) * 100));
+        const estimatedRemaining = Math.max(0, 100 - estimatedUsage);
+        
+        // Update inline context bar in tmux panel
+        const fillInline = document.getElementById('context-fill-inline');
+        const percentText = document.getElementById('context-percent');
+        const estimateText = document.getElementById('context-estimate');
+        const separatorText = document.querySelector('.context-separator');
+        const usedLabel = document.getElementById('context-used-label');
+        const mainLabel = document.getElementById('context-main-label');
+        
+        // Check if we have scraped context from tmux
+        const hasScrapedContext = context.source === 'tmux';
+        
+        // Update main label based on source
+        if (mainLabel) {
+          mainLabel.textContent = hasScrapedContext ? 'Context Remaining:' : '(Estimated) Context Remaining:';
+        }
+        
+        if (fillInline) {
+          // Use scraped context if available, otherwise use estimated remaining
+          const displayPercent = hasScrapedContext ? percent : estimatedRemaining;
+          fillInline.style.width = displayPercent + '%';
+          
+          // Color coding
+          if (displayPercent > 50) {
+            fillInline.style.background = '#4CAF50';
+          } else if (displayPercent > 20) {
+            fillInline.style.background = '#ff9800';
+          } else {
+            fillInline.style.background = '#f44336';
+          }
+        }
+        
+        if (percentText) {
+          // Show scraped context or estimated remaining
+          if (hasScrapedContext) {
+            percentText.textContent = percent + '%';
+            percentText.style.color = percent < 20 ? '#f44336' : (percent < 50 ? '#ff9800' : '#4CAF50');
+          } else {
+            percentText.textContent = `~${estimatedRemaining}%`;
+            percentText.style.color = estimatedRemaining < 20 ? '#f44336' : (estimatedRemaining < 50 ? '#ff9800' : '#4CAF50');
+          }
+        }
+        
+        // Hide or show the "Used" section based on whether we have scraped context
+        if (separatorText) separatorText.style.display = hasScrapedContext ? 'none' : 'inline';
+        if (usedLabel) usedLabel.style.display = hasScrapedContext ? 'none' : 'inline';
+        if (estimateText) {
+          estimateText.style.display = hasScrapedContext ? 'none' : 'inline';
+          if (!hasScrapedContext) {
+            // Only show if we're using estimated context
+            estimateText.textContent = `~${estimatedUsage}%`;
+            estimateText.style.color = estimatedUsage > 80 ? '#f44336' : (estimatedUsage > 60 ? '#ff9800' : '#4CAF50');
+            // Add title for hover info
+            estimateText.title = `Estimated context used from conversation: ${charsSinceCompact.toLocaleString()} chars ≈ ${Math.round(charsSinceCompact/4).toLocaleString()} tokens`;
+          }
+        }
+        
+        // Update conditional messaging with context (if function exists)
+        if (window.dashboardConditional && typeof dashboardConditional.updateContext === 'function') {
+          dashboardConditional.updateContext(percent);
+        }
+      } catch (error) {
+        console.error('Failed to update context:', error);
+      }
+    }
+    
+    // Log monitor controls
+    async function startLogMonitor() {
+      try {
+        await dashboardAPI.request('/api/log-monitor/start', { method: 'POST' });
+        updateLogMonitorStatus();
+      } catch (error) {
+        alert('Failed to start log monitor: ' + error.message);
+      }
+    }
+    
+    async function stopLogMonitor() {
+      try {
+        await dashboardAPI.request('/api/log-monitor/stop', { method: 'POST' });
+        updateLogMonitorStatus();
+      } catch (error) {
+        alert('Failed to stop log monitor: ' + error.message);
+      }
+    }
+    
+    async function listLogMonitors() {
+      try {
+        const response = await dashboardAPI.request('/api/log-monitor/list');
+        const info = document.getElementById('monitor-info');
+        if (response.monitors && response.monitors.length > 0) {
+          info.innerHTML = `<small>Active: ${response.monitors.join(', ')}</small>`;
+        } else {
+          info.innerHTML = '<small>No active monitors</small>';
+        }
+      } catch (error) {
+        console.error('Failed to list monitors:', error);
+      }
+    }
+    
+    async function updateLogMonitorStatus() {
+      try {
+        const response = await dashboardAPI.request('/api/log-monitor/status');
+        const indicator = document.getElementById('monitor-indicator');
+        const text = document.getElementById('monitor-text');
+        
+        if (response.running) {
+          indicator.className = 'status-indicator running';
+          text.textContent = 'Running';
+        } else {
+          indicator.className = 'status-indicator stopped';
+          text.textContent = 'Stopped';
+        }
+      } catch (error) {
+        console.error('Failed to update monitor status:', error);
+      }
+    }
+    
+    // Tmux monitoring
+    async function refreshTmux() {
+      try {
+        // Get selected line count from dropdown
+        const linesSelect = document.getElementById('tmux-lines');
+        const lineCount = parseInt(linesSelect ? linesSelect.value : 500);
+        
+        const response = await dashboardAPI.getTmuxTail(lineCount, currentSession);
+        const content = document.getElementById('tmux-content');
+        
+        if (response.content) {
+          content.innerHTML = dashboardUtils.convertAnsiToHtml(response.content);
+          
+          if (document.getElementById('auto-scroll').checked) {
+            content.scrollTop = content.scrollHeight;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh tmux:', error);
+      }
+    }
+    
+    // Update tmux lines when dropdown changes
+    async function updateTmuxLines() {
+      // Save the selection to config
+      const linesSelect = document.getElementById('tmux-lines');
+      if (linesSelect) {
+        loopConfig.tmuxLines = parseInt(linesSelect.value);
+        await saveConfig();
+      }
+      await refreshTmux();
+    }
+    
+    function clearTmux() {
+      document.getElementById('tmux-content').innerHTML = '';
+    }
+    
+    async function sendToTmux() {
+      const input = document.getElementById('tmux-command');
+      const command = input.value.trim();
+      if (!command) return;
+      
+      try {
+        await dashboardAPI.sendToTmux(command, currentSession);
+        input.value = '';
+        setTimeout(refreshTmux, 500);
+      } catch (error) {
+        alert('Failed to send command: ' + error.message);
+      }
+    }
+    
+    function handleTmuxInput(event) {
+      if (event.key === 'Enter') {
+        sendToTmux();
+      }
+    }
+    
+    // Claude control functions
+    async function startClaude() {
+      try {
+        await dashboardAPI.request('/api/claude/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: currentSession })
+        });
+        
+        // Wait a bit then refresh display
+        setTimeout(refreshTmux, 500);
+      } catch (error) {
+        alert('Failed to start Claude: ' + error.message);
+      }
+    }
+    
+    async function stopClaude() {
+      try {
+        await dashboardAPI.request('/api/claude/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: currentSession })
+        });
+        
+        // Wait a bit then refresh display
+        setTimeout(refreshTmux, 500);
+      } catch (error) {
+        alert('Failed to stop Claude: ' + error.message);
+      }
+    }
+    
+    async function restartClaude() {
+      try {
+        const response = await dashboardAPI.request('/api/claude/restart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: currentSession })
+        });
+        
+        // If we resumed a conversation, show a note
+        if (response.resumed) {
+          console.log(`Restarted with resume: ${response.conversationId}`);
+          // Could show a toast or update UI to indicate resume
+        }
+        
+        // Refresh display after a moment
+        setTimeout(() => {
+          refreshTmux();
+          updateStatus();
+        }, 2000);
+      } catch (error) {
+        alert('Failed to restart Claude: ' + error.message);
+      }
+    }
+    
+    async function sendCompact() {
+      try {
+        await dashboardAPI.request('/api/claude/compact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: currentSession })
+        });
+        
+        // Wait a bit then refresh display and context
+        setTimeout(() => {
+          refreshTmux();
+          updateContext();
+        }, 500);
+      } catch (error) {
+        alert('Failed to send compact: ' + error.message);
+      }
+    }
+    
+    
+    // Schedule management
+    function toggleSchedule() {
+      const card = document.getElementById('schedule-card');
+      const content = document.getElementById('schedule-content');
+      const toggle = card.querySelector('.toggle');
+      
+      if (card.classList.contains('collapsed')) {
+        card.classList.remove('collapsed');
+        content.style.display = 'block';
+        toggle.textContent = '▼';
+        // Initialize schedule when opened
+        if (window.dashboardSchedule) {
+          dashboardSchedule.init();
+        }
+      } else {
+        card.classList.add('collapsed');
+        content.style.display = 'none';
+        toggle.textContent = '▶';
+      }
+    }
+    
+    function editSchedule() {
+      // Show schedule modal
+      document.getElementById('schedule-modal').style.display = 'block';
+    }
+    
+    function closeScheduleModal() {
+      document.getElementById('schedule-modal').style.display = 'none';
+    }
+    
+    async function toggleScheduleEnabled() {
+      // Implementation needed
+      alert('Schedule toggle coming soon');
+    }
+    
+    // Tab switching
+    window.switchTab = function(tab) {
+      currentTab = tab;
+      
+      // Update tab buttons
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.getElementById(`${tab}-tab`).classList.add('active');
+      
+      // Update tab panels
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+        panel.style.display = 'none';
+      });
+      const activePanel = document.getElementById(`${tab}-panel`);
+      activePanel.classList.add('active');
+      activePanel.style.display = 'block';
+      
+      // Load content for the active tab
+      if (tab === 'chat') {
+        loadChatMessages();
+      } else if (tab === 'tmux') {
+        refreshTmux();
+      }
+    }
+    
+    window.refreshCurrentTab = function() {
+      if (currentTab === 'chat') {
+        loadChatMessages();
+      } else {
+        refreshTmux();
+      }
+    }
+    
+    window.clearCurrentTab = function() {
+      if (currentTab === 'chat') {
+        document.getElementById('chat-content').innerHTML = '<div class="loading">Loading chat messages...</div>';
+      } else {
+        clearTmux();
+      }
+    }
+    
+    // Auto-associate conversation
+    async function autoAssociateConversation() {
+      const session = window.currentSession || 'claude';
+      const statusDiv = document.getElementById('conversation-association');
+      
+      try {
+        statusDiv.innerHTML = '<span style="color: var(--accent);">🔍 Searching for matching conversation...</span>';
+        
+        const response = await dashboardAPI.request('/api/conversation/auto-associate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session })
+        });
+        
+        if (response.success) {
+          statusDiv.innerHTML = `<span style="color: var(--success);">✅ Associated: ${response.conversationId.substring(0, 8)}...</span>`;
+          // Reload chat messages
+          await loadChatMessages();
+        } else {
+          throw new Error(response.error || 'Failed to auto-associate');
+        }
+      } catch (error) {
+        console.error('Auto-associate failed:', error);
+        statusDiv.innerHTML = `<span style="color: var(--danger);">❌ ${error.message}</span>`;
+      }
+    }
+    
+    // Load chat messages
+    async function loadChatMessages() {
+      try {
+        // Get current conversation
+        const convResponse = await dashboardAPI.getCurrentConversation();
+        
+        // Update association status
+        const statusDiv = document.getElementById('conversation-association');
+        if (statusDiv) {
+          if (convResponse.conversationId) {
+            statusDiv.innerHTML = `<span style="color: var(--text-muted);">📍 ${convResponse.conversationId.substring(0, 8)}...</span>`;
+          } else {
+            statusDiv.innerHTML = '<span style="color: var(--text-muted);">No conversation associated</span>';
+          }
+        }
+        
+        if (!convResponse.conversationId) {
+          document.getElementById('chat-content').innerHTML = '<div class="empty">No active conversation</div>';
+          return;
+        }
+        
+        // Get messages
+        const messages = await dashboardAPI.getConversationMessages(convResponse.conversationId);
+        
+        const container = document.getElementById('chat-content');
+        if (messages && messages.length > 0) {
+          let html = '<div class="chat-messages">';
+          messages.forEach(msg => {
+            const isUser = msg.type === 'user';
+            const alignClass = isUser ? 'message-right' : 'message-left';
+            const typeClass = isUser ? 'user' : 'assistant';
+            
+            html += `
+              <div class="chat-message ${alignClass} ${typeClass}">
+                <div class="message-header ${typeClass}-header">
+                  ${isUser ? '👤 User' : '🤖 Assistant'}
+                </div>
+                <div class="message-bubble">
+                  ${dashboardUtils.formatMessageContent ? 
+                    dashboardUtils.formatMessageContent(msg.content) : 
+                    msg.content}
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+          container.innerHTML = html;
+          
+          // Auto-scroll to bottom
+          if (document.getElementById('auto-scroll').checked) {
+            container.scrollTop = container.scrollHeight;
+          }
+        } else {
+          container.innerHTML = '<div class="empty">No messages yet</div>';
+        }
+      } catch (error) {
+        console.error('Failed to load chat messages:', error);
+        document.getElementById('chat-content').innerHTML = 
+          '<div class="error">Failed to load messages: ' + error.message + '</div>';
+      }
+    }
+    
+    // Theme management functions
+    window.updateTheme = function() {
+      const themeMode = localStorage.getItem('themeMode') || 'auto';
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      let isDark = false;
+      const icon = document.getElementById('dark-mode-icon');
+      const text = document.getElementById('dark-mode-text');
+      
+      switch(themeMode) {
+        case 'auto':
+          isDark = prefersDark;
+          icon.textContent = isDark ? '🌙' : '☀️';
+          text.textContent = 'Auto';
+          break;
+        case 'light':
+          isDark = false;
+          icon.textContent = '☀️';
+          text.textContent = 'Light';
+          break;
+        case 'dark':
+          isDark = true;
+          icon.textContent = '🌙';
+          text.textContent = 'Dark';
+          break;
+      }
+      
+      if (isDark) {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+      } else {
+        document.documentElement.classList.remove('dark-mode');
+        document.body.classList.remove('dark-mode');
+      }
+    }
+    
+    window.toggleDarkMode = function() {
+      const currentMode = localStorage.getItem('themeMode') || 'auto';
+      let nextMode;
+      
+      // Cycle: Auto → Light → Dark → Auto
+      switch(currentMode) {
+        case 'auto':
+          nextMode = 'light';
+          break;
+        case 'light':
+          nextMode = 'dark';
+          break;
+        case 'dark':
+          nextMode = 'auto';
+          break;
+        default:
+          nextMode = 'auto';
+      }
+      
+      if (nextMode === 'auto') {
+        localStorage.removeItem('themeMode');
+      } else {
+        localStorage.setItem('themeMode', nextMode);
+      }
+      
+      updateTheme();
+    }
+    
+    // Start monitoring intervals
+    function startMonitoring() {
+      // Update status every second for smooth countdown
+      setInterval(updateStatus, 1000);
+      
+      // Update context every 10 seconds
+      setInterval(updateContext, 10000);
+      
+      // Refresh tmux every 2 seconds
+      setInterval(refreshTmux, 2000);
+      
+      
+      // Initial loads
+      updateStatus();
+      updateContext();
+      refreshTmux();
+      updateLogMonitorStatus();
+    }
+  </script>
+</body>
+</html>

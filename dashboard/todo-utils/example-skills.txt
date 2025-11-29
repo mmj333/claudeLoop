@@ -1,0 +1,31 @@
+# Example skill list for InfiniQuest
+# Physical Skills
+Juggling
+Yoga Basics
+Running Form
+Swimming Techniques
+Rock Climbing
+
+# Cognitive Skills
+Critical Thinking
+Speed Reading
+Memory Palace Technique
+Mental Math
+
+# Creative Skills  
+Drawing Fundamentals
+Creative Writing
+Music Composition
+Photography Basics
+
+# Technical Skills
+Python Programming
+JavaScript Basics
+Git Version Control
+Docker Fundamentals
+
+# Life Skills
+Time Management
+Public Speaking
+Active Listening
+Conflict Resolution

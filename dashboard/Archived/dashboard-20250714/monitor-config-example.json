@@ -1,0 +1,7 @@
+{
+  "checkIntervalActive": 2,
+  "checkIntervalIdle": 15,
+  "checkIntervalMaxIdle": 60,
+  "userIdleThresholdMinutes": 2,
+  "userLongIdleThresholdMinutes": 10
+}

@@ -1,0 +1,26 @@
+{
+  "claude-loop4": {
+    "conversationId": "1af7cc50-9380-4972-88f4-c4691b9c77d6",
+    "workingDirectory": "/home/michael/InfiniQuest",
+    "setAt": "2025-08-17T15:56:21.159Z",
+    "manual": true
+  },
+  "claude-loop1": {
+    "conversationId": "9834d2f2-00e8-4007-894b-4903219d8327",
+    "workingDirectory": "/home/michael/InfiniQuest",
+    "setAt": "2025-08-20T02:37:47.192Z",
+    "manual": true
+  },
+  "claude-loop8": {
+    "conversationId": "04e33012-3832-49e1-adbf-df983ab575bc",
+    "workingDirectory": "/home/michael/Test",
+    "setAt": "2025-08-17T16:16:58.042Z",
+    "manual": true
+  },
+  "meow": {
+    "conversationId": "7e1edd1e-6a5a-44bd-9416-90e5167cb2f8",
+    "title": "This session is being continued from a previous co...",
+    "projectPath": "/home/michael/InfiniQuest",
+    "trackedAt": "2025-08-20T01:52:45.136Z"
+  }
+}

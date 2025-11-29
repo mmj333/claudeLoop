@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claude Loop Unified Control</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/dashboard-styles.css">
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header Controls -->
+    <div class="header">
+      <h1>Claude Loop Control Center</h1>
+      <div class="header-actions">
+        <button id="toggle-dark-mode" class="btn btn-secondary">🌙</button>
+        <span class="status-indicator" id="status-indicator">●</span>
+        <span id="status-text">Initializing...</span>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('control')">Control</button>
+      <button class="tab-button" onclick="switchTab('config')">Config</button>
+      <button class="tab-button" onclick="switchTab('console')">Console</button>
+      <button class="tab-button" onclick="switchTab('logs')">Logs</button>
+      <button class="tab-button" onclick="switchTab('monitor')">Monitor</button>
+      <button class="tab-button" onclick="switchTab('chat')">Chat</button>
+      <button class="tab-button" onclick="switchTab('conversation')">Conversations</button>
+      <button class="tab-button" onclick="switchTab('status')">Status</button>
+      <button class="tab-button" onclick="switchTab('schedule')">Schedule</button>
+    </div>
+
+    <!-- Control Tab -->
+    <div id="control-tab" class="tab-content active">
+      <div class="control-panel">
+        <h2>Loop Control</h2>
+        
+        <!-- Session Management -->
+        <div class="session-controls">
+          <label>Session:</label>
+          <select id="session-select">
+            <option value="">Loading...</option>
+          </select>
+          <button onclick="createNewSession()" class="btn btn-secondary">New Session</button>
+          <button onclick="killCurrentSession()" class="btn btn-danger">Kill Session</button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="control-buttons">
+          <button onclick="sendControl('start')" class="btn btn-primary">▶️ Start</button>
+          <button onclick="sendControl('stop')" class="btn btn-danger">⏹️ Stop</button>
+          <button onclick="sendControl('pause')" class="btn btn-warning">⏸️ Pause</button>
+          <button onclick="sendControl('resume')" class="btn btn-success">▶️ Resume</button>
+          <button onclick="sendControl('test')" class="btn btn-info">🧪 Test</button>
+        </div>
+        
+        <!-- Custom Message -->
+        <div class="custom-message">
+          <h3>Send Custom Message</h3>
+          <textarea id="custom-message" placeholder="Type your message here..."></textarea>
+          <button onclick="sendCustomMessage()" class="btn btn-primary">Send Message</button>
+        </div>
+
+        <!-- Context Display -->
+        <div class="context-display">
+          <h3>Current Context</h3>
+          <div id="context-info" class="info-box">
+            <div class="context-item">
+              <span class="context-label">Usage:</span>
+              <span id="context-usage">Loading...</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Threshold:</span>
+              <span id="context-threshold">Loading...</span>
+            </div>
+            <div class="context-item">
+              <span class="context-label">Status:</span>
+              <span id="context-status">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config Tab -->
+    <div id="config-tab" class="tab-content">
+      <div class="config-panel">
+        <h2>Configuration</h2>
+        <form id="config-form">
+          <div class="form-group">
+            <label for="api-key">API Key:</label>
+            <input type="password" id="api-key" name="apiKey" placeholder="Enter your API key">
+          </div>
+          
+          <div class="form-group">
+            <label for="model">Model:</label>
+            <select id="model" name="model">
+              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+              <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+              <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="compact-threshold">Compact Threshold (%):</label>
+            <input type="number" id="compact-threshold" name="compactThreshold" min="1" max="100" value="10">
+          </div>
+          
+          <div class="form-group">
+            <label for="check-interval">Check Interval (seconds):</label>
+            <input type="number" id="check-interval" name="checkInterval" min="1" value="30">
+          </div>
+          
+          <div class="form-group">
+            <label for="auto-resume">
+              <input type="checkbox" id="auto-resume" name="autoResume">
+              Auto Resume on Compact
+            </label>
+          </div>
+          
+          <div class="form-group">
+            <label for="working-dir">Working Directory:</label>
+            <input type="text" id="working-dir" name="workingDir" placeholder="/path/to/project">
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Save Configuration</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Console Tab -->
+    <div id="console-tab" class="tab-content">
+      <div class="console-panel">
+        <h2>Tmux Console</h2>
+        <div class="tmux-controls">
+          <button onclick="refreshTmuxLogs()" class="btn btn-secondary">Refresh</button>
+          <button onclick="clearTmuxLogs()" class="btn btn-danger">Clear</button>
+          <label>
+            <input type="checkbox" id="auto-scroll" checked> Auto-scroll
+          </label>
+        </div>
+        <div id="tmux-console" class="console-output"></div>
+        <div class="tmux-input">
+          <input type="text" id="tmux-command" placeholder="Enter tmux command..." onkeypress="handleTmuxInput(event)">
+          <button onclick="sendToTmux()" class="btn btn-primary">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs Tab -->
+    <div id="logs-tab" class="tab-content">
+      <div class="logs-panel">
+        <h2>System Logs</h2>
+        <div class="log-controls">
+          <button onclick="refreshLogs()" class="btn btn-secondary">Refresh</button>
+          <select id="log-lines" onchange="refreshLogs()">
+            <option value="50">50 lines</option>
+            <option value="100">100 lines</option>
+            <option value="200">200 lines</option>
+            <option value="500">500 lines</option>
+          </select>
+        </div>
+        <div id="logs-output" class="console-output"></div>
+      </div>
+    </div>
+
+    <!-- Monitor Tab -->
+    <div id="monitor-tab" class="tab-content">
+      <div class="monitor-panel">
+        <h2>Log Monitor</h2>
+        <div class="monitor-controls">
+          <h3>Monitor Type</h3>
+          <div class="monitor-options">
+            <label>
+              <input type="radio" name="monitor-type" value="console" checked 
+                     onchange="setMonitorType('console')"> Console Output
+            </label>
+            <label>
+              <input type="radio" name="monitor-type" value="api" 
+                     onchange="setMonitorType('api')"> API Responses
+            </label>
+            <label>
+              <input type="radio" name="monitor-type" value="both" 
+                     onchange="setMonitorType('both')"> Both
+            </label>
+          </div>
+          
+          <div class="monitor-actions">
+            <button onclick="startMonitor()" class="btn btn-success">Start Monitor</button>
+            <button onclick="stopMonitor()" class="btn btn-danger">Stop Monitor</button>
+            <button onclick="checkMonitorStatus()" class="btn btn-info">Check Status</button>
+          </div>
+          
+          <div id="monitor-status" class="status-box">
+            <h4>Monitor Status</h4>
+            <div id="monitor-info">Not running</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Tab -->
+    <div id="chat-tab" class="tab-content">
+      <div class="chat-panel">
+        <h2>Conversation History</h2>
+        <div class="chat-controls">
+          <button onclick="loadChatMessages()" class="btn btn-secondary">Refresh</button>
+          <label>
+            <input type="checkbox" id="chat-auto-scroll" checked> Auto-scroll
+          </label>
+        </div>
+        <div id="chat-messages" class="chat-container">
+          <div class="loading">Loading conversation...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversation Tab -->
+    <div id="conversation-tab" class="tab-content">
+      <div class="conversation-panel">
+        <h2>Conversation Manager</h2>
+        
+        <div class="conversation-actions">
+          <button onclick="scanConversations()" class="btn btn-primary">Scan for Conversations</button>
+          <button onclick="fullScanConversations()" class="btn btn-secondary">Full Scan</button>
+          <button onclick="refreshConversationList()" class="btn btn-info">Refresh List</button>
+        </div>
+        
+        <div class="conversation-container">
+          <div class="conversation-list">
+            <h3>Available Conversations</h3>
+            <div id="conversation-tree" class="tree-view">
+              <div class="loading">Loading conversations...</div>
+            </div>
+          </div>
+          
+          <div class="conversation-details">
+            <h3>Conversation Details</h3>
+            <div id="conversation-info" class="info-panel">
+              <p>Select a conversation to view details</p>
+            </div>
+            
+            <div class="conversation-actions-detail">
+              <button onclick="trackConversation()" class="btn btn-primary" disabled>Track in Session</button>
+              <button onclick="assignToProject()" class="btn btn-secondary" disabled>Assign to Project</button>
+              <button onclick="renameConversation()" class="btn btn-info" disabled>Rename</button>
+              <button onclick="deleteConversation()" class="btn btn-danger" disabled>Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Tab -->
+    <div id="status-tab" class="tab-content">
+      <div class="status-panel">
+        <h2>System Status</h2>
+        
+        <div class="status-grid">
+          <div class="status-card">
+            <h3>Loop Status</h3>
+            <div id="loop-status" class="status-content">
+              <div class="status-item">
+                <span class="label">State:</span>
+                <span id="loop-state">Unknown</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Running:</span>
+                <span id="loop-running">false</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Last Update:</span>
+                <span id="loop-last-update">Never</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="status-card">
+            <h3>Session Info</h3>
+            <div id="session-status" class="status-content">
+              <div class="status-item">
+                <span class="label">Current Session:</span>
+                <span id="current-session">None</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Active Sessions:</span>
+                <span id="active-sessions">0</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Session Start:</span>
+                <span id="session-start">N/A</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="status-card">
+            <h3>Performance</h3>
+            <div id="performance-status" class="status-content">
+              <div class="status-item">
+                <span class="label">Memory Usage:</span>
+                <span id="memory-usage">0 MB</span>
+              </div>
+              <div class="status-item">
+                <span class="label">CPU Load:</span>
+                <span id="cpu-load">0%</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Uptime:</span>
+                <span id="uptime">0h 0m</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="auto-resume-status">
+          <h3>Auto-Resume Status</h3>
+          <div id="auto-resume-info" class="info-box">
+            <div class="loading">Checking auto-resume status...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule Tab -->
+    <div id="schedule-tab" class="tab-content">
+      <div class="schedule-panel">
+        <h2>Schedule Configuration</h2>
+        
+        <div class="schedule-form">
+          <h3>Schedule Settings</h3>
+          <form id="schedule-form">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="schedule-enabled" name="enabled">
+                Enable Scheduled Operation
+              </label>
+            </div>
+            
+            <div class="form-group">
+              <label for="schedule-type">Schedule Type:</label>
+              <select id="schedule-type" name="type" onchange="updateScheduleFields()">
+                <option value="interval">Interval</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="cron">Cron Expression</option>
+              </select>
+            </div>
+            
+            <div id="interval-fields" class="schedule-fields">
+              <div class="form-group">
+                <label for="interval-value">Run every:</label>
+                <input type="number" id="interval-value" name="intervalValue" min="1" value="30">
+                <select id="interval-unit" name="intervalUnit">
+                  <option value="minutes">Minutes</option>
+                  <option value="hours">Hours</option>
+                  <option value="days">Days</option>
+                </select>
+              </div>
+            </div>
+            
+            <div id="daily-fields" class="schedule-fields" style="display: none;">
+              <div class="form-group">
+                <label for="daily-time">Time:</label>
+                <input type="time" id="daily-time" name="dailyTime" value="09:00">
+              </div>
+            </div>
+            
+            <div id="weekly-fields" class="schedule-fields" style="display: none;">
+              <div class="form-group">
+                <label>Days of Week:</label>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="weekdays" value="0"> Sunday</label>
+                  <label><input type="checkbox" name="weekdays" value="1"> Monday</label>
+                  <label><input type="checkbox" name="weekdays" value="2"> Tuesday</label>
+                  <label><input type="checkbox" name="weekdays" value="3"> Wednesday</label>
+                  <label><input type="checkbox" name="weekdays" value="4"> Thursday</label>
+                  <label><input type="checkbox" name="weekdays" value="5"> Friday</label>
+                  <label><input type="checkbox" name="weekdays" value="6"> Saturday</label>
+                </div>
+                <label for="weekly-time">Time:</label>
+                <input type="time" id="weekly-time" name="weeklyTime" value="09:00">
+              </div>
+            </div>
+            
+            <div id="cron-fields" class="schedule-fields" style="display: none;">
+              <div class="form-group">
+                <label for="cron-expression">Cron Expression:</label>
+                <input type="text" id="cron-expression" name="cronExpression" placeholder="0 */30 * * * *">
+                <small>Format: second minute hour dayOfMonth month dayOfWeek</small>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="schedule-command">Command to Run:</label>
+              <textarea id="schedule-command" name="command" placeholder="Enter the command to execute..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label for="schedule-session">Target Session:</label>
+              <select id="schedule-session" name="session">
+                <option value="">Default Session</option>
+              </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Save Schedule</button>
+          </form>
+        </div>
+        
+        <div class="schedule-status">
+          <h3>Current Schedule</h3>
+          <div id="schedule-info" class="info-box">
+            <div class="loading">Loading schedule...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include external scripts -->
+  <script src="/dashboard-utils.js"></script>
+  <script src="/dashboard-api.js"></script>
+  <script src="/dashboard-main.js"></script>
+</body>
+</html>

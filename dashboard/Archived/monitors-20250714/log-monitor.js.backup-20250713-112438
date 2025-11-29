@@ -1,0 +1,306 @@
+#!/usr/bin/env node
+
+/**
+ * Improved Claude Loop Monitor with Smart Log Rotation
+ * - Rotates logs daily at midnight or when size exceeds 1MB
+ * - Maintains a single current log file that gets rotated
+ * - Minimizes content overlap between logs
+ * - Appends new content from tmux instead of full captures
+ */
+
+const fs = require('fs');
+const fsPromises = require('fs').promises;
+const path = require('path');
+const { spawn, exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
+
+const CONFIG = {
+  maxLogSize: 1 * 1024 * 1024, // 1MB - rotate when exceeded
+  checkInterval: 30000, // Check every 30 seconds
+  logDir: path.join(process.env.HOME, 'InfiniQuest', 'tmp', 'claudeLogs'),
+  sessionName: 'claude',
+  pauseFile: '/tmp/claude_loop_paused',
+  resumeTimeFile: '/tmp/claude_loop_resume_time'
+};
+
+class ImprovedClaudeMonitor {
+  constructor() {
+    this.isRunning = false;
+    this.lastLineCount = 0;
+    this.currentLogPath = null;
+    this.lastRotationDate = null;
+  }
+
+  async start() {
+    console.log('🚀 Starting Improved Claude Loop Monitor...\n');
+    
+    await fsPromises.mkdir(CONFIG.logDir, { recursive: true });
+    
+    this.isRunning = true;
+    this.currentLogPath = this.getCurrentLogPath();
+    this.lastRotationDate = new Date().toDateString();
+    
+    // Initialize or continue with existing log
+    await this.initializeLog();
+    
+    // Start monitoring
+    this.startMonitoring();
+    
+    console.log('✅ Monitor started with improved features:');
+    console.log('   - Daily rotation at midnight');
+    console.log('   - Size-based rotation at 1MB');
+    console.log('   - Incremental content appending');
+    console.log('   - Usage limit detection');
+    console.log('   - Current log:', path.basename(this.currentLogPath));
+    console.log('');
+  }
+
+  getCurrentLogPath() {
+    const date = new Date().toISOString().split('T')[0];
+    return path.join(CONFIG.logDir, `claude_${date}_current.txt`);
+  }
+
+  async initializeLog() {
+    try {
+      // Check if current log exists
+      const exists = fs.existsSync(this.currentLogPath);
+      if (exists) {
+        // Count existing lines to continue from where we left off
+        const content = await fsPromises.readFile(this.currentLogPath, 'utf8');
+        this.lastLineCount = content.split('\n').length;
+        console.log(`📄 Continuing existing log with ${this.lastLineCount} lines`);
+      } else {
+        // Create new log with initial content
+        const initialContent = await this.captureCurrentTmuxContent();
+        await fsPromises.writeFile(this.currentLogPath, initialContent);
+        this.lastLineCount = initialContent.split('\n').length;
+        console.log(`📄 Created new log file for today`);
+      }
+    } catch (err) {
+      console.error('Error initializing log:', err.message);
+    }
+  }
+
+  async captureCurrentTmuxContent() {
+    try {
+      // Capture last 2000 lines from tmux
+      const { stdout } = await execPromise(
+        `tmux capture-pane -pt "${CONFIG.sessionName}" -S -2000 2>/dev/null || echo ""`
+      );
+      return stdout;
+    } catch (err) {
+      return '';
+    }
+  }
+
+  async appendNewContent() {
+    try {
+      // Get current tmux content
+      const currentContent = await this.captureCurrentTmuxContent();
+      const currentLines = currentContent.split('\n');
+      
+      // Find overlap with existing log
+      const existingContent = await fsPromises.readFile(this.currentLogPath, 'utf8');
+      const existingLines = existingContent.split('\n');
+      
+      // Look for overlap in the last 100 lines
+      let overlapIndex = -1;
+      const searchWindow = Math.min(100, existingLines.length);
+      const searchStart = existingLines.length - searchWindow;
+      
+      for (let i = searchStart; i < existingLines.length; i++) {
+        const existingChunk = existingLines.slice(i, i + 10).join('\n');
+        const currentIndex = currentContent.indexOf(existingChunk);
+        
+        if (currentIndex !== -1) {
+          // Found overlap, calculate where new content starts
+          const linesBeforeOverlap = currentContent.substring(0, currentIndex).split('\n').length - 1;
+          overlapIndex = linesBeforeOverlap + (existingLines.length - i);
+          break;
+        }
+      }
+      
+      // Append only new content
+      if (overlapIndex > 0 && overlapIndex < currentLines.length) {
+        const newLines = currentLines.slice(overlapIndex);
+        if (newLines.length > 0) {
+          await fsPromises.appendFile(this.currentLogPath, '\n' + newLines.join('\n'));
+          console.log(`📝 Appended ${newLines.length} new lines`);
+        }
+      }
+      
+    } catch (err) {
+      console.error('Error appending content:', err.message);
+    }
+  }
+
+  async checkAndRotate() {
+    const now = new Date();
+    const currentDate = now.toDateString();
+    
+    // Check if date changed (midnight rotation)
+    if (currentDate !== this.lastRotationDate) {
+      console.log('\n🌙 Midnight reached - rotating log...');
+      await this.rotateLog('daily');
+      this.lastRotationDate = currentDate;
+      this.currentLogPath = this.getCurrentLogPath();
+      return;
+    }
+    
+    // Check file size
+    try {
+      const stats = await fsPromises.stat(this.currentLogPath);
+      const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+      
+      if (stats.size > CONFIG.maxLogSize) {
+        console.log(`\n📊 Log size ${sizeMB}MB exceeds limit - rotating...`);
+        await this.rotateLog('size');
+      }
+    } catch (err) {
+      // File doesn't exist, create it
+      await this.initializeLog();
+    }
+  }
+
+  async rotateLog(reason) {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const date = new Date().toISOString().split('T')[0];
+      const rotatedName = `claude_${date}_${timestamp}_${reason}.txt`;
+      const rotatedPath = path.join(CONFIG.logDir, rotatedName);
+      
+      // Move current log to rotated name
+      await fsPromises.rename(this.currentLogPath, rotatedPath);
+      
+      console.log(`✅ Log rotated to: ${rotatedName}`);
+      
+      // Start fresh log with minimal content
+      const recentContent = await this.captureCurrentTmuxContent();
+      const recentLines = recentContent.split('\n');
+      const startContent = recentLines.slice(-100).join('\n'); // Keep last 100 lines
+      
+      await fsPromises.writeFile(this.currentLogPath, startContent);
+      this.lastLineCount = 100;
+      
+      console.log(`📄 New log started with ${this.lastLineCount} lines of context`);
+      
+      // Clean up old logs
+      await this.cleanupOldLogs();
+      
+    } catch (err) {
+      console.error('Error rotating log:', err.message);
+    }
+  }
+
+  async cleanupOldLogs() {
+    try {
+      const files = await fsPromises.readdir(CONFIG.logDir);
+      const logFiles = files
+        .filter(f => f.startsWith('claude_') && f.endsWith('.txt') && !f.includes('current'))
+        .map(f => ({
+          name: f,
+          path: path.join(CONFIG.logDir, f),
+          time: fs.statSync(path.join(CONFIG.logDir, f)).mtime
+        }))
+        .sort((a, b) => b.time - a.time);
+      
+      // Keep last 20 rotated logs
+      const toDelete = logFiles.slice(20);
+      
+      for (const file of toDelete) {
+        await fsPromises.unlink(file.path);
+        console.log(`🗑️  Deleted old log: ${file.name}`);
+      }
+    } catch (err) {
+      console.error('Error cleaning up logs:', err.message);
+    }
+  }
+
+  async checkForUsageLimit() {
+    try {
+      const content = await this.captureCurrentTmuxContent();
+      const recentLines = content.split('\n').slice(-50);
+      
+      const limitPatterns = [
+        /usage limit reached.*?(\d{1,2}):?(\d{0,2})\s*(am|pm)/i,
+        /limit will reset at.*?(\d{1,2}):?(\d{0,2})\s*(am|pm)/i,
+        /try again at.*?(\d{1,2}):?(\d{0,2})\s*(am|pm)/i
+      ];
+      
+      for (const line of recentLines) {
+        for (const pattern of limitPatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            console.log('\n⚠️  Usage limit detected!');
+            console.log(`   Message: "${line.trim()}"`);
+            
+            // Parse time and create pause signal
+            let hour = parseInt(match[1]);
+            const minute = match[2] ? parseInt(match[2]) : 0;
+            const ampm = match[3];
+            
+            if (ampm === 'pm' && hour !== 12) hour += 12;
+            if (ampm === 'am' && hour === 12) hour = 0;
+            
+            const resumeTime = new Date();
+            resumeTime.setHours(hour, minute, 0, 0);
+            
+            if (resumeTime <= new Date()) {
+              resumeTime.setDate(resumeTime.getDate() + 1);
+            }
+            
+            // Signal pause
+            await fsPromises.writeFile(CONFIG.resumeTimeFile, resumeTime.toISOString());
+            await fsPromises.writeFile(CONFIG.pauseFile, '1');
+            
+            console.log(`   Will resume at: ${resumeTime.toLocaleTimeString()}`);
+            return true;
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors
+    }
+    return false;
+  }
+
+  startMonitoring() {
+    // Main monitoring loop
+    setInterval(async () => {
+      if (!this.isRunning) return;
+      
+      // Append new content
+      await this.appendNewContent();
+      
+      // Check for rotation needs
+      await this.checkAndRotate();
+      
+      // Check for usage limits
+      await this.checkForUsageLimit();
+      
+    }, CONFIG.checkInterval);
+  }
+
+  async stop() {
+    console.log('\n🛑 Stopping monitor...');
+    this.isRunning = false;
+    
+    // Final save
+    await this.appendNewContent();
+    
+    console.log('✅ Monitor stopped');
+    process.exit(0);
+  }
+}
+
+// Main execution
+const monitor = new ImprovedClaudeMonitor();
+
+process.on('SIGINT', () => monitor.stop());
+process.on('SIGTERM', () => monitor.stop());
+
+monitor.start().catch(err => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

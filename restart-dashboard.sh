@@ -1,0 +1,1 @@
+dashboard/restart-dashboard.sh

@@ -1,0 +1,1073 @@
+{
+  "timestamp": "2025-08-19T01:06:36.895Z",
+  "summary": {
+    "totalConversations": 64,
+    "totalMessages": 50857,
+    "conversationsWithParents": 64,
+    "conversationsWithChildren": 0
+  },
+  "messageTypes": [
+    "summary",
+    "user",
+    "assistant",
+    "system"
+  ],
+  "exampleMessages": {
+    "summary": {
+      "example": {
+        "type": "summary",
+        "summary": "Incomplete Conversation: No Specific Context Provided",
+        "leafUuid": "73be97c9-b46f-4dcf-992c-78af726d2aed"
+      },
+      "fields": [
+        "type",
+        "summary",
+        "leafUuid"
+      ]
+    },
+    "user": {
+      "example": {
+        "parentUuid": null,
+        "isSidechain": false,
+        "userType": "external",
+        "cwd": "/home/michael",
+        "sessionId": "57846e8d-74fd-4ed6-8316-f2f12273b097",
+        "version": "1.0.56",
+        "gitBranch": "",
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": "/continue"
+        },
+        "uuid": "b9564fd8-66d7-4b92-8952-0f1412617f7a",
+        "timestamp": "2025-07-20T17:03:55.557Z"
+      },
+      "fields": [
+        "parentUuid",
+        "isSidechain",
+        "userType",
+        "cwd",
+        "sessionId",
+        "version",
+        "gitBranch",
+        "type",
+        "message",
+        "uuid",
+        "timestamp"
+      ]
+    },
+    "assistant": {
+      "example": {
+        "parentUuid": "1a194416-9a1f-4081-8e61-283428ef9d00",
+        "isSidechain": false,
+        "userType": "external",
+        "cwd": "/home/michael/Computers_Plus_Repair",
+        "sessionId": "17ab8024-4b0b-481c-a7ea-c1b79562614c",
+        "version": "1.0.67",
+        "gitBranch": "",
+        "message": {
+          "id": "msg_01D3Lge65QPz86Vw6uCdfhnn",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-20250514",
+          "content": [
+            {
+              "type": "text",
+              "text": "Yes! You can create a virtual audio loopback on Linux to route audio output directly to a virtual microphone input. Here are the main approaches:\n\n**1. PulseAudio (most common):**\n```bash\n# Create a virtual sink (output)\npactl load-module module-null-sink sink_name=virtual_speaker sink_properties=device.description=\"Virtual_Speaker\"\n\n# Create a loopback from the virtual sink to your default microphone\npactl load-module module-loopback source=virtual_speaker.monitor sink=@DEFAULT_SINK@\n\n# Play audio to the virtual sink\npaplay --device=virtual_speaker your_greeting.wav\n```\n\n**2. Using `pw-loopback` (PipeWire):**\n```bash\n# If using PipeWire instead of PulseAudio\npw-loopback -C virtual_mic -P @DEFAULT_SINK@\n```\n\n**3. ALSA loopback (lower level):**\n```bash\n# Load the loopback module\nsudo modprobe snd-aloop\n\n# This creates loopback devices (hw:Loopback,0 and hw:Loopback,1)\n# Configure with .asoundrc for easier use\n```\n\nFor Google Voice specifically, you'd:\n1. Set up the virtual audio device\n2. Configure your browser/Google Voice to use the virtual microphone as input\n3. Play your recorded greeting through the virtual speaker\n4. Google Voice will \"hear\" it through the virtual mic\n\nThe PulseAudio method is usually easiest for most desktop Linux systems."
+            }
+          ],
+          "stop_reason": "end_turn",
+          "stop_sequence": null,
+          "usage": {
+            "input_tokens": 3,
+            "cache_creation_input_tokens": 17291,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 369,
+            "service_tier": "standard"
+          }
+        },
+        "requestId": "req_011CRk1Hm6GSn28YhxADSGR2",
+        "type": "assistant",
+        "uuid": "8c58bd2c-c0d1-47fb-ab03-4b5acf257f59",
+        "timestamp": "2025-08-03T02:42:28.643Z"
+      },
+      "fields": [
+        "parentUuid",
+        "isSidechain",
+        "userType",
+        "cwd",
+        "sessionId",
+        "version",
+        "gitBranch",
+        "message",
+        "requestId",
+        "type",
+        "uuid",
+        "timestamp"
+      ]
+    },
+    "system": {
+      "example": {
+        "parentUuid": "193871d0-3cfe-466b-9b4e-a43cbd2d7ecb",
+        "isSidechain": false,
+        "userType": "external",
+        "cwd": "/home/michael/Computers_Plus_Repair",
+        "sessionId": "4f3415f3-042c-4a2e-ba5f-117d44e16712",
+        "version": "1.0.64",
+        "gitBranch": "",
+        "type": "system",
+        "content": "PostToolUse:WebSearch hook execution cancelled",
+        "isMeta": false,
+        "timestamp": "2025-07-31T15:22:37.352Z",
+        "uuid": "04df11f8-41fa-45b2-9d44-a27c4fb2ddc7",
+        "toolUseID": "toolu_01Rn8u16VEkhi1sndKj12j4L",
+        "level": "warning"
+      },
+      "fields": [
+        "parentUuid",
+        "isSidechain",
+        "userType",
+        "cwd",
+        "sessionId",
+        "version",
+        "gitBranch",
+        "type",
+        "content",
+        "isMeta",
+        "timestamp",
+        "uuid",
+        "toolUseID",
+        "level"
+      ]
+    }
+  },
+  "fieldStats": {
+    "type": {
+      "count": 50857,
+      "types": {},
+      "examples": [
+        "summary",
+        "user",
+        "assistant"
+      ]
+    },
+    "summary": {
+      "count": 176,
+      "types": {},
+      "examples": [
+        "Incomplete Conversation: No Specific Context Provided",
+        "Helcim Payment Integration and Admin System Development",
+        "Computers Plus Repair: WordPress Migration & Check-In System"
+      ]
+    },
+    "leafUuid": {
+      "count": 176,
+      "types": {},
+      "examples": [
+        "73be97c9-b46f-4dcf-992c-78af726d2aed",
+        "31d3a973-7f3d-41c6-8e22-8bddb99f5826",
+        "0604f97d-f85b-4bfd-9408-f55c8fd64de6"
+      ]
+    },
+    "parentUuid": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "b9564fd8-66d7-4b92-8952-0f1412617f7a",
+        "1a194416-9a1f-4081-8e61-283428ef9d00",
+        "8c58bd2c-c0d1-47fb-ab03-4b5acf257f59"
+      ]
+    },
+    "isSidechain": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "false",
+        "true"
+      ]
+    },
+    "userType": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "external"
+      ]
+    },
+    "cwd": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "/home/michael",
+        "/home/michael/Computers_Plus_Repair",
+        "/home/michael/Computers_Plus_Repair/backend"
+      ]
+    },
+    "sessionId": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "57846e8d-74fd-4ed6-8316-f2f12273b097",
+        "17ab8024-4b0b-481c-a7ea-c1b79562614c",
+        "1945fb75-335b-4625-b922-755a735d03f0"
+      ]
+    },
+    "version": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "1.0.56",
+        "1.0.67",
+        "1.0.62"
+      ]
+    },
+    "gitBranch": {
+      "count": 47697,
+      "types": {},
+      "examples": [
+        "",
+        "main"
+      ]
+    },
+    "message": {
+      "count": 50680,
+      "types": {},
+      "examples": [
+        "{\"role\":\"user\",\"content\":\"/continue\"}",
+        "{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"[Request interrupted by user]\"}]}",
+        "{\"role\":\"user\",\"content\":\"is there a way to playback linux audio output over a virtual microphone so"
+      ]
+    },
+    "message.role": {
+      "count": 50680,
+      "types": {},
+      "examples": [
+        "user",
+        "assistant"
+      ]
+    },
+    "message.content": {
+      "count": 50680,
+      "types": {},
+      "examples": [
+        "/continue",
+        "[{\"type\":\"text\",\"text\":\"[Request interrupted by user]\"}]",
+        "is there a way to playback linux audio output over a virtual microphone so I can playback a recorded"
+      ]
+    },
+    "uuid": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "b9564fd8-66d7-4b92-8952-0f1412617f7a",
+        "73be97c9-b46f-4dcf-992c-78af726d2aed",
+        "1a194416-9a1f-4081-8e61-283428ef9d00"
+      ]
+    },
+    "timestamp": {
+      "count": 50681,
+      "types": {},
+      "examples": [
+        "2025-07-20T17:03:55.557Z",
+        "2025-07-20T17:03:57.351Z",
+        "2025-08-03T02:42:18.314Z"
+      ]
+    },
+    "message.id": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "msg_01D3Lge65QPz86Vw6uCdfhnn",
+        "msg_016mHfDzDsktcK3t4kB1Hr7d",
+        "msg_01UQ7HzckUoRik6dMDCFc5XL"
+      ]
+    },
+    "message.type": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "message"
+      ]
+    },
+    "message.model": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "claude-opus-4-20250514",
+        "<synthetic>",
+        "claude-sonnet-4-20250514"
+      ]
+    },
+    "message.stop_reason": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "end_turn",
+        "stop_sequence",
+        "tool_use"
+      ]
+    },
+    "message.stop_sequence": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        ""
+      ]
+    },
+    "message.usage": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "{\"input_tokens\":3,\"cache_creation_input_tokens\":17291,\"cache_read_input_tokens\":0,\"output_tokens\":36",
+        "{\"input_tokens\":3,\"cache_creation_input_tokens\":392,\"cache_read_input_tokens\":17291,\"output_tokens\":",
+        "{\"input_tokens\":3,\"cache_creation_input_tokens\":373,\"cache_read_input_tokens\":17683,\"output_tokens\":"
+      ]
+    },
+    "message.usage.input_tokens": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "3",
+        "2",
+        "1"
+      ]
+    },
+    "message.usage.cache_creation_input_tokens": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "17291",
+        "392",
+        "373"
+      ]
+    },
+    "message.usage.cache_read_input_tokens": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "0",
+        "17291",
+        "17683"
+      ]
+    },
+    "message.usage.output_tokens": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "369",
+        "344",
+        "169"
+      ]
+    },
+    "message.usage.service_tier": {
+      "count": 31137,
+      "types": {},
+      "examples": [
+        "standard"
+      ]
+    },
+    "requestId": {
+      "count": 30283,
+      "types": {},
+      "examples": [
+        "req_011CRk1Hm6GSn28YhxADSGR2",
+        "req_011CRk1NW2YFsXRUKPUSXFYj",
+        "req_011CRk1RgeLuegBqmBeLnvB2"
+      ]
+    },
+    "toolUseResult": {
+      "count": 14901,
+      "types": {},
+      "examples": [
+        "{\"stdout\":\"\",\"stderr\":\"\",\"interrupted\":false,\"isImage\":false}",
+        "{\"stdout\":\"/usr/share/sounds/linuxmint-login.wav\\n/usr/share/sounds/alsa/Front_Center.wav\\n/usr/shar",
+        "{\"stdout\":\"1644\\tvirtual_speaker\\tPipeWire\\tfloat32le 2ch 48000Hz\\tRUNNING\",\"stderr\":\"\",\"interrupted"
+      ]
+    },
+    "toolUseResult.stdout": {
+      "count": 2430,
+      "types": {},
+      "examples": [
+        "",
+        "/usr/share/sounds/linuxmint-login.wav\n/usr/share/sounds/alsa/Front_Center.wav\n/usr/share/sounds/alsa",
+        "1644\tvirtual_speaker\tPipeWire\tfloat32le 2ch 48000Hz\tRUNNING"
+      ]
+    },
+    "toolUseResult.stderr": {
+      "count": 2430,
+      "types": {},
+      "examples": [
+        "",
+        "Shell cwd was reset to /home/michael/InfiniQuest/tmp/claudeLoop"
+      ]
+    },
+    "toolUseResult.interrupted": {
+      "count": 2430,
+      "types": {},
+      "examples": [
+        "false"
+      ]
+    },
+    "toolUseResult.isImage": {
+      "count": 2430,
+      "types": {},
+      "examples": [
+        "false"
+      ]
+    },
+    "isCompactSummary": {
+      "count": 116,
+      "types": {},
+      "examples": [
+        "true"
+      ]
+    },
+    "isMeta": {
+      "count": 81,
+      "types": {},
+      "examples": [
+        "true",
+        "false"
+      ]
+    },
+    "message.usage.server_tool_use": {
+      "count": 203,
+      "types": {},
+      "examples": [
+        "{\"web_search_requests\":0}"
+      ]
+    },
+    "message.usage.server_tool_use.web_search_requests": {
+      "count": 203,
+      "types": {},
+      "examples": [
+        "0"
+      ]
+    },
+    "isApiErrorMessage": {
+      "count": 178,
+      "types": {},
+      "examples": [
+        "false",
+        "true"
+      ]
+    },
+    "toolUseResult.type": {
+      "count": 3037,
+      "types": {},
+      "examples": [
+        "text",
+        "create",
+        "update"
+      ]
+    },
+    "toolUseResult.file": {
+      "count": 1985,
+      "types": {},
+      "examples": [
+        "{\"filePath\":\"/home/michael/Computers_Plus_Repair/frontend/service_pricing.js\",\"content\":\"           ",
+        "{\"filePath\":\"/home/michael/Computers_Plus_Repair/frontend/app.js\",\"content\":\"/**\\n * Modern Check-In",
+        "{\"filePath\":\"/home/michael/Computers_Plus_Repair/frontend/styles_split.css\",\"content\":\"/* Split Layo"
+      ]
+    },
+    "toolUseResult.file.filePath": {
+      "count": 1953,
+      "types": {},
+      "examples": [
+        "/home/michael/Computers_Plus_Repair/frontend/service_pricing.js",
+        "/home/michael/Computers_Plus_Repair/frontend/app.js",
+        "/home/michael/Computers_Plus_Repair/frontend/styles_split.css"
+      ]
+    },
+    "toolUseResult.file.content": {
+      "count": 1951,
+      "types": {},
+      "examples": [
+        "                <label for=\"other_software\">Additional software requests:</label>\n                <t",
+        "/**\n * Modern Check-In Application\n */\n\n// Detect if we're accessing from IP address or localhost\nco",
+        "/* Split Layout Specific Styles */\n\n:root {\n    /* Configurable columns - easy to change for 3-colum"
+      ]
+    },
+    "toolUseResult.file.numLines": {
+      "count": 1951,
+      "types": {},
+      "examples": [
+        "100",
+        "50",
+        "314"
+      ]
+    },
+    "toolUseResult.file.startLine": {
+      "count": 1951,
+      "types": {},
+      "examples": [
+        "400",
+        "1",
+        "990"
+      ]
+    },
+    "toolUseResult.file.totalLines": {
+      "count": 1951,
+      "types": {},
+      "examples": [
+        "981",
+        "1523",
+        "382"
+      ]
+    },
+    "toolUseResult.mode": {
+      "count": 2328,
+      "types": {},
+      "examples": [
+        "content",
+        "files_with_matches",
+        "count"
+      ]
+    },
+    "toolUseResult.numFiles": {
+      "count": 2395,
+      "types": {},
+      "examples": [
+        "0",
+        "3",
+        "2"
+      ]
+    },
+    "toolUseResult.filenames": {
+      "count": 2395,
+      "types": {},
+      "examples": [
+        "[]",
+        "[\"/home/michael/Computers_Plus_Repair/frontend/app.js\",\"/home/michael/Computers_Plus_Repair/frontend",
+        "[\"/home/michael/Computers_Plus_Repair/frontend/service_pricing.js\",\"/home/michael/Computers_Plus_Rep"
+      ]
+    },
+    "toolUseResult.content": {
+      "count": 3322,
+      "types": {},
+      "examples": [
+        "\"usb_128\": { name: \"Keep backup on 128GB USB drive\", price: 39.99 },\n                        \"extern",
+        "// Show/hide backup storage options\n            document.getElementById('virus_backup_check')?.addEv",
+        "<option value=\"premium_2_18m\">Malwarebytes Premium - 18 months, 2 devices (+$59.99)</option>\n       "
+      ]
+    },
+    "toolUseResult.numLines": {
+      "count": 2229,
+      "types": {},
+      "examples": [
+        "67",
+        "15",
+        "33"
+      ]
+    },
+    "toolUseResult.filePath": {
+      "count": 5438,
+      "types": {},
+      "examples": [
+        "/home/michael/Computers_Plus_Repair/frontend/service_pricing.js",
+        "/home/michael/Computers_Plus_Repair/frontend/app.js",
+        "/home/michael/Computers_Plus_Repair/frontend/app_split.js"
+      ]
+    },
+    "toolUseResult.oldString": {
+      "count": 4308,
+      "types": {},
+      "examples": [
+        "            <label class=\"checkbox-option\">\n                <input type=\"checkbox\" name=\"virus_auto_",
+        "            <label class=\"checkbox-option\">\n                <input type=\"checkbox\" name=\"repair_auto",
+        "            // Show/hide backup storage options\n            document.getElementById('virus_backup_ch"
+      ]
+    },
+    "toolUseResult.newString": {
+      "count": 4308,
+      "types": {},
+      "examples": [
+        "            <label class=\"checkbox-option\">\n                <input type=\"checkbox\" name=\"virus_auto_",
+        "            <label class=\"checkbox-option\">\n                <input type=\"checkbox\" name=\"repair_auto",
+        "            // Show/hide backup storage options\n            document.getElementById('virus_backup_ch"
+      ]
+    },
+    "toolUseResult.originalFile": {
+      "count": 4308,
+      "types": {},
+      "examples": [
+        "// Service Pricing Configuration and Logic\n\n// Toggle collapsible sections\nwindow.toggleSection = fu",
+        "/**\n * Modern Check-In Application\n */\n\n// Detect if we're accessing from IP address or localhost\nco",
+        "// Split Layout Application Logic\nconst splitApp = {\n    currentServicePrice: 0,\n    \n    init() {\n "
+      ]
+    },
+    "toolUseResult.structuredPatch": {
+      "count": 5438,
+      "types": {},
+      "examples": [
+        "[{\"oldStart\":557,\"oldLines\":13,\"newStart\":557,\"newLines\":16,\"lines\":[\"             <p style=\\\"font-s",
+        "[{\"oldStart\":660,\"oldLines\":13,\"newStart\":660,\"newLines\":16,\"lines\":[\"                 <input type=\\",
+        "[{\"oldStart\":579,\"oldLines\":14,\"newStart\":579,\"newLines\":6,\"lines\":[\"                 }\",\"          "
+      ]
+    },
+    "toolUseResult.userModified": {
+      "count": 4386,
+      "types": {},
+      "examples": [
+        "false",
+        "true"
+      ]
+    },
+    "toolUseResult.replaceAll": {
+      "count": 4308,
+      "types": {},
+      "examples": [
+        "false",
+        "true"
+      ]
+    },
+    "toolUseResult.oldTodos": {
+      "count": 1190,
+      "types": {},
+      "examples": [
+        "[{\"content\":\"Create index_sidebyside.html with two-column layout\",\"status\":\"completed\",\"priority\":\"h",
+        "[{\"content\":\"Review and optimize current codebase (cleanup, modularity)\",\"status\":\"in_progress\",\"pri",
+        "[{\"content\":\"Review and optimize current codebase (cleanup, modularity)\",\"status\":\"completed\",\"prior"
+      ]
+    },
+    "toolUseResult.newTodos": {
+      "count": 1190,
+      "types": {},
+      "examples": [
+        "[{\"content\":\"Review and optimize current codebase (cleanup, modularity)\",\"status\":\"in_progress\",\"pri",
+        "[{\"content\":\"Review and optimize current codebase (cleanup, modularity)\",\"status\":\"completed\",\"prior",
+        "[{\"content\":\"Extract pricing data from service_pricing.js into clean JSON structure\",\"status\":\"in_pr"
+      ]
+    },
+    "toolUseResult.returnCodeInterpretation": {
+      "count": 52,
+      "types": {},
+      "examples": [
+        "No matches found"
+      ]
+    },
+    "toolUseResult.edits": {
+      "count": 78,
+      "types": {},
+      "examples": [
+        "[{\"old_string\":\"const express = require('express');\\nconst router = express.Router();\\nconst db = re",
+        "[{\"old_string\":\"            // Get old value - safe because field is validated\\n            const ol",
+        "[{\"old_string\":\"                <span>Professional data recovery <em>$149.99</em></span>\",\"new_strin"
+      ]
+    },
+    "toolUseResult.originalFileContents": {
+      "count": 78,
+      "types": {},
+      "examples": [
+        "const express = require('express');\nconst router = express.Router();\nconst db = require('../db');\nco",
+        "const express = require('express');\nconst router = express.Router();\nconst { query } = require('../d",
+        "// Service Pricing Configuration and Logic\n\n// Toggle collapsible sections\nwindow.toggleSection = fu"
+      ]
+    },
+    "toolUseResult.durationMs": {
+      "count": 95,
+      "types": {},
+      "examples": [
+        "168",
+        "13",
+        "8858"
+      ]
+    },
+    "toolUseResult.truncated": {
+      "count": 66,
+      "types": {},
+      "examples": [
+        "true",
+        "false"
+      ]
+    },
+    "toolUseResult.file.base64": {
+      "count": 34,
+      "types": {},
+      "examples": [
+        "iVBORw0KGgoAAAANSUhEUgAAA1QAAAHUCAIAAACyLP77AAAAA3NCSVQICAjb4U/gAAAgAElEQVR4XuydBWAURxuGSS7uRhQLJFiC",
+        "iVBORw0KGgoAAAANSUhEUgAAAmEAAACPCAIAAAA9RpvHAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4Xu3dCVxTV7448IOx9xZIlCUK",
+        "iVBORw0KGgoAAAANSUhEUgAABZ8AAAORCAIAAAASzEsYAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4XuzdC1xUZf4/8KMMnIFhBpGL"
+      ]
+    },
+    "toolUseResult.file.type": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "image/png"
+      ]
+    },
+    "toolUseResult.file.originalSize": {
+      "count": 34,
+      "types": {},
+      "examples": [
+        "39346",
+        "11621",
+        "73090"
+      ]
+    },
+    "toolUseResult.query": {
+      "count": 36,
+      "types": {},
+      "examples": [
+        "Google Places API (New) long place ID starting with E synthetic place ID 2024",
+        "Google Places API New place ID format \"EigxMjE1\" encoded addresses 2025",
+        "Google Places API New \"EigxMjE1\" place ID format long encoded \"is not valid\" 2025"
+      ]
+    },
+    "toolUseResult.results": {
+      "count": 36,
+      "types": {},
+      "examples": [
+        "[\"I'll search for information about Google Places API (New) long place IDs that start with 'E' and s",
+        "[\"I'll search for information about Google Places API's new place ID format with \\\"EigxMjE5\\\" encode",
+        "[\"I'll search for information about the Google Places API new place ID format issue you're experienc"
+      ]
+    },
+    "toolUseResult.durationSeconds": {
+      "count": 36,
+      "types": {},
+      "examples": [
+        "43.12192228198052",
+        "15.443097028970719",
+        "50.81130602502823"
+      ]
+    },
+    "toolUseResult.bytes": {
+      "count": 29,
+      "types": {},
+      "examples": [
+        "241128",
+        "211368",
+        "241124"
+      ]
+    },
+    "toolUseResult.code": {
+      "count": 29,
+      "types": {},
+      "examples": [
+        "200"
+      ]
+    },
+    "toolUseResult.codeText": {
+      "count": 29,
+      "types": {},
+      "examples": [
+        "OK"
+      ]
+    },
+    "toolUseResult.result": {
+      "count": 29,
+      "types": {},
+      "examples": [
+        "Based on the provided documentation, here are the key points about place IDs:\n\nThe document doesn't ",
+        "Based on the provided document, there are no specific details about place ID formats or encoded plac",
+        "After carefully reviewing the document, I did not find specific information about different place ID"
+      ]
+    },
+    "toolUseResult.url": {
+      "count": 29,
+      "types": {},
+      "examples": [
+        "https://developers.google.com/maps/documentation/places/web-service/place-details",
+        "https://developers.google.com/maps/documentation/places/web-service/op-overview",
+        "https://devdocs.helcim.com/docs/overview-of-helcimpayjs"
+      ]
+    },
+    "toolUseResult.plan": {
+      "count": 98,
+      "types": {},
+      "examples": [
+        "## Optimized Address Autocomplete Implementation Plan\n\nBased on our research, here's what I propose:",
+        "## Plan to Fix Split-Actions Bar Display Issue\n\nBased on my analysis comparing the current and backu",
+        "## Plan to Fix Split-Actions Bar Not Displaying\n\nBased on my investigation, I've identified the root"
+      ]
+    },
+    "toolUseResult.isAgent": {
+      "count": 98,
+      "types": {},
+      "examples": [
+        "false",
+        "true"
+      ]
+    },
+    "toolUseResult.totalDurationMs": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "73281",
+        "189316",
+        "175379"
+      ]
+    },
+    "toolUseResult.totalTokens": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "39056",
+        "82600",
+        "103290"
+      ]
+    },
+    "toolUseResult.totalToolUseCount": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "3",
+        "26",
+        "25"
+      ]
+    },
+    "toolUseResult.usage": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "{\"input_tokens\":4,\"cache_creation_input_tokens\":1266,\"cache_read_input_tokens\":37782,\"output_tokens\"",
+        "{\"input_tokens\":2,\"cache_creation_input_tokens\":4638,\"cache_read_input_tokens\":75912,\"output_tokens\"",
+        "{\"input_tokens\":5,\"cache_creation_input_tokens\":11465,\"cache_read_input_tokens\":89896,\"output_tokens"
+      ]
+    },
+    "toolUseResult.usage.input_tokens": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "4",
+        "2",
+        "5"
+      ]
+    },
+    "toolUseResult.usage.cache_creation_input_tokens": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "1266",
+        "4638",
+        "11465"
+      ]
+    },
+    "toolUseResult.usage.cache_read_input_tokens": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "37782",
+        "75912",
+        "89896"
+      ]
+    },
+    "toolUseResult.usage.output_tokens": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "4",
+        "2048",
+        "1924"
+      ]
+    },
+    "toolUseResult.usage.service_tier": {
+      "count": 32,
+      "types": {},
+      "examples": [
+        "standard"
+      ]
+    },
+    "toolUseResult.exitPlanModeInput": {
+      "count": 1,
+      "types": {},
+      "examples": [
+        "{\"plan\":\"## Plan to Fix Split-Actions Bar Display Issue\\n\\nBased on my analysis comparing the curren"
+      ]
+    },
+    "toolUseResult.exitPlanModeInput.plan": {
+      "count": 1,
+      "types": {},
+      "examples": [
+        "## Plan to Fix Split-Actions Bar Display Issue\n\nBased on my analysis comparing the current and backu"
+      ]
+    },
+    "toolUseResult.numMatches": {
+      "count": 9,
+      "types": {},
+      "examples": [
+        "58",
+        "0"
+      ]
+    },
+    "content": {
+      "count": 1,
+      "types": {},
+      "examples": [
+        "PostToolUse:WebSearch hook execution cancelled"
+      ]
+    },
+    "toolUseID": {
+      "count": 1,
+      "types": {},
+      "examples": [
+        "toolu_01Rn8u16VEkhi1sndKj12j4L"
+      ]
+    },
+    "level": {
+      "count": 1,
+      "types": {},
+      "examples": [
+        "warning"
+      ]
+    },
+    "message.usage.cache_creation": {
+      "count": 5559,
+      "types": {},
+      "examples": [
+        "{\"ephemeral_5m_input_tokens\":62859,\"ephemeral_1h_input_tokens\":0}",
+        "{\"ephemeral_5m_input_tokens\":838,\"ephemeral_1h_input_tokens\":0}",
+        "{\"ephemeral_5m_input_tokens\":3364,\"ephemeral_1h_input_tokens\":0}"
+      ]
+    },
+    "message.usage.cache_creation.ephemeral_5m_input_tokens": {
+      "count": 5559,
+      "types": {},
+      "examples": [
+        "62859",
+        "838",
+        "3364"
+      ]
+    },
+    "message.usage.cache_creation.ephemeral_1h_input_tokens": {
+      "count": 5559,
+      "types": {},
+      "examples": [
+        "0"
+      ]
+    },
+    "toolUseResult.usage.cache_creation": {
+      "count": 3,
+      "types": {},
+      "examples": [
+        "{\"ephemeral_5m_input_tokens\":183,\"ephemeral_1h_input_tokens\":0}",
+        "{\"ephemeral_5m_input_tokens\":1708,\"ephemeral_1h_input_tokens\":0}",
+        "{\"ephemeral_5m_input_tokens\":583,\"ephemeral_1h_input_tokens\":0}"
+      ]
+    },
+    "toolUseResult.usage.cache_creation.ephemeral_5m_input_tokens": {
+      "count": 3,
+      "types": {},
+      "examples": [
+        "183",
+        "1708",
+        "583"
+      ]
+    },
+    "toolUseResult.usage.cache_creation.ephemeral_1h_input_tokens": {
+      "count": 3,
+      "types": {},
+      "examples": [
+        "0"
+      ]
+    },
+    "toolUseResult.wasInterrupted": {
+      "count": 25,
+      "types": {},
+      "examples": [
+        "false"
+      ]
+    }
+  },
+  "allFields": [
+    "type",
+    "summary",
+    "leafUuid",
+    "parentUuid",
+    "isSidechain",
+    "userType",
+    "cwd",
+    "sessionId",
+    "version",
+    "gitBranch",
+    "message",
+    "message.role",
+    "message.content",
+    "uuid",
+    "timestamp",
+    "message.id",
+    "message.type",
+    "message.model",
+    "message.stop_reason",
+    "message.stop_sequence",
+    "message.usage",
+    "message.usage.input_tokens",
+    "message.usage.cache_creation_input_tokens",
+    "message.usage.cache_read_input_tokens",
+    "message.usage.output_tokens",
+    "message.usage.service_tier",
+    "requestId",
+    "toolUseResult",
+    "toolUseResult.stdout",
+    "toolUseResult.stderr",
+    "toolUseResult.interrupted",
+    "toolUseResult.isImage",
+    "isCompactSummary",
+    "isMeta",
+    "message.usage.server_tool_use",
+    "message.usage.server_tool_use.web_search_requests",
+    "isApiErrorMessage",
+    "toolUseResult.type",
+    "toolUseResult.file",
+    "toolUseResult.file.filePath",
+    "toolUseResult.file.content",
+    "toolUseResult.file.numLines",
+    "toolUseResult.file.startLine",
+    "toolUseResult.file.totalLines",
+    "toolUseResult.mode",
+    "toolUseResult.numFiles",
+    "toolUseResult.filenames",
+    "toolUseResult.content",
+    "toolUseResult.numLines",
+    "toolUseResult.filePath",
+    "toolUseResult.oldString",
+    "toolUseResult.newString",
+    "toolUseResult.originalFile",
+    "toolUseResult.structuredPatch",
+    "toolUseResult.userModified",
+    "toolUseResult.replaceAll",
+    "toolUseResult.oldTodos",
+    "toolUseResult.newTodos",
+    "toolUseResult.returnCodeInterpretation",
+    "toolUseResult.edits",
+    "toolUseResult.originalFileContents",
+    "toolUseResult.durationMs",
+    "toolUseResult.truncated",
+    "toolUseResult.file.base64",
+    "toolUseResult.file.type",
+    "toolUseResult.file.originalSize",
+    "toolUseResult.query",
+    "toolUseResult.results",
+    "toolUseResult.durationSeconds",
+    "toolUseResult.bytes",
+    "toolUseResult.code",
+    "toolUseResult.codeText",
+    "toolUseResult.result",
+    "toolUseResult.url",
+    "toolUseResult.plan",
+    "toolUseResult.isAgent",
+    "toolUseResult.totalDurationMs",
+    "toolUseResult.totalTokens",
+    "toolUseResult.totalToolUseCount",
+    "toolUseResult.usage",
+    "toolUseResult.usage.input_tokens",
+    "toolUseResult.usage.cache_creation_input_tokens",
+    "toolUseResult.usage.cache_read_input_tokens",
+    "toolUseResult.usage.output_tokens",
+    "toolUseResult.usage.service_tier",
+    "toolUseResult.exitPlanModeInput",
+    "toolUseResult.exitPlanModeInput.plan",
+    "toolUseResult.numMatches",
+    "content",
+    "toolUseID",
+    "level",
+    "message.usage.cache_creation",
+    "message.usage.cache_creation.ephemeral_5m_input_tokens",
+    "message.usage.cache_creation.ephemeral_1h_input_tokens",
+    "toolUseResult.usage.cache_creation",
+    "toolUseResult.usage.cache_creation.ephemeral_5m_input_tokens",
+    "toolUseResult.usage.cache_creation.ephemeral_1h_input_tokens",
+    "toolUseResult.wasInterrupted"
+  ]
+}

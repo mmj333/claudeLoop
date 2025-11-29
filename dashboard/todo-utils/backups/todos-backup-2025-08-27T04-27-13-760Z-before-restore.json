@@ -1,0 +1,377 @@
+[
+  {
+    "id": "skillqir6o9d4utx0eiu",
+    "text": "Generate skill template: Conflict Resolution",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-demo",
+    "created_at": "2025-08-27T04:17:18.087Z",
+    "notes": [
+      "Skill: Conflict Resolution",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Conflict Resolution",
+      "template_status": "pending"
+    },
+    "action": "add"
+  },
+  {
+    "id": "skill9t7oqnh8p4iljyn",
+    "text": "Generate skill template: Juggling",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Juggling",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Juggling",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill3fjgylimdbzjtcy",
+    "text": "Generate skill template: Yoga Basics",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Yoga Basics",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Yoga Basics",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill7bwnmz27quil1vo",
+    "text": "Generate skill template: Running Form",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Running Form",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Running Form",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill54tr4adv1s477xf",
+    "text": "Generate skill template: Swimming Techniques",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Swimming Techniques",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Swimming Techniques",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skilltzh241rk5damn59",
+    "text": "Generate skill template: Rock Climbing",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Rock Climbing",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Rock Climbing",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillj60nvqxi5vfe2ns",
+    "text": "Generate skill template: Critical Thinking",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Critical Thinking",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Critical Thinking",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skille6vanjeopaqrtn2",
+    "text": "Generate skill template: Speed Reading",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Speed Reading",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Speed Reading",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillwqlsgn8jf71dobu",
+    "text": "Generate skill template: Memory Palace Technique",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Memory Palace Technique",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Memory Palace Technique",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillhhs5vly5uxxzlc2",
+    "text": "Generate skill template: Mental Math",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Mental Math",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Mental Math",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillk7kos6578fpuam6",
+    "text": "Generate skill template: Drawing Fundamentals",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.407Z",
+    "notes": [
+      "Skill: Drawing Fundamentals",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Drawing Fundamentals",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill9i9e5i9bh02k0h6",
+    "text": "Generate skill template: Creative Writing",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Creative Writing",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Creative Writing",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillk1ydpru9y6x1icw",
+    "text": "Generate skill template: Music Composition",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Music Composition",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Music Composition",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill12rn82xklq0w9da",
+    "text": "Generate skill template: Photography Basics",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Photography Basics",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Photography Basics",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillc391hjzmqok54h2",
+    "text": "Generate skill template: Python Programming",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Python Programming",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Python Programming",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillu1f1urwjk2tdoyh",
+    "text": "Generate skill template: JavaScript Basics",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: JavaScript Basics",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "JavaScript Basics",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill640lhyuv61q11ag",
+    "text": "Generate skill template: Git Version Control",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Git Version Control",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Git Version Control",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skilluxvj74v3cny605y",
+    "text": "Generate skill template: Docker Fundamentals",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Docker Fundamentals",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Docker Fundamentals",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillosqchjhxyc9jwrf",
+    "text": "Generate skill template: Time Management",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Time Management",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Time Management",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillaybxjk9ae9xhhq8",
+    "text": "Generate skill template: Public Speaking",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Public Speaking",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Public Speaking",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skill3gdp1e6z16szxc0",
+    "text": "Generate skill template: Active Listening",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.415Z",
+    "notes": [
+      "Skill: Active Listening",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Active Listening",
+      "template_status": "pending"
+    }
+  },
+  {
+    "id": "skillrkh82u4l18tt538",
+    "text": "Generate skill template: Conflict Resolution",
+    "status": "pending",
+    "priority": "normal",
+    "project": "skill-seeding",
+    "created_at": "2025-08-27T04:20:00.423Z",
+    "notes": [
+      "Skill: Conflict Resolution",
+      "Category: [to be determined]"
+    ],
+    "metadata": {
+      "type": "skill_template",
+      "skill_name": "Conflict Resolution",
+      "template_status": "pending"
+    }
+  }
+]

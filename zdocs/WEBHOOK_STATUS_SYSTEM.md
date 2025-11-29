@@ -20,7 +20,7 @@ The webhook status system allows Claude Code sessions to POST status updates to 
 ```json
 {
   "session": "claude-loop16",
-  "status": "done|idle|waiting|stuck|needs-input",
+  "status": "done|idle|waiting|stuck|needs-input|auto-compact",
   "context": {
     "task": "Optional task description",
     "question": "Optional question for stuck/needs-input status"
@@ -32,7 +32,7 @@ The webhook status system allows Claude Code sessions to POST status updates to 
 ```json
 {
   "received": true,
-  "action": "review|next-task|acknowledged|needs-attention",
+  "action": "review|next-task|acknowledged|needs-attention|compact",
   "message": "Optional message that will be sent",
   "reviewsRemaining": 2
 }
@@ -60,6 +60,12 @@ The webhook status system allows Claude Code sessions to POST status updates to 
 5. **needs-input** - Requires user input
    - Action: `needs-attention`
    - Logs warning with context/question
+
+6. **auto-compact** - Request context compaction
+   - Action: `compact`
+   - Triggers `/compact` command with 5-minute debounce
+   - Replaces phrase scraping for "let's compact" detection
+   - More reliable than regex pattern matching
 
 ### Review Loop System
 
@@ -256,8 +262,38 @@ curl -X POST http://192.168.1.2:3335/api/webhook/status \
 curl -X POST http://192.168.1.2:3335/api/webhook/status \
   -H "Content-Type: application/json" \
   -d '{"session": "claude-loop16", "status": "invalid"}'
-# Response: {"error":"Invalid status. Must be one of: done, idle, waiting, stuck, needs-input"}
+# Response: {"error":"Invalid status. Must be one of: done, idle, waiting, stuck, needs-input, auto-compact"}
+
+# Test auto-compact status
+curl -X POST http://192.168.1.2:3335/api/webhook/status \
+  -H "Content-Type: application/json" \
+  -d '{"session": "claude-loop16", "status": "auto-compact"}'
+# Response: {"received":true,"action":"compact"}
 ```
+
+## What Was Replaced
+
+The webhook system replaced CPU-intensive phrase scraping:
+
+### Before (Phrase Scraping)
+- **detectCompactPhrase()** function: ~50 lines of regex pattern matching
+- Scanned tmux output for "let's compact" or "/compact" phrases
+- Cached results for 60 seconds to reduce CPU load
+- Added "let's compact!" instruction to low-context messages
+- Prone to false positives from similar phrases in output
+
+### After (Webhook)
+- **auto-compact** status: Single webhook POST request
+- No regex scanning, no false positives
+- Same debounce protection (5-minute cooldown)
+- Explicit status reporting from Claude
+- ~100 lines of code removed
+
+### Performance Impact
+- **CPU Usage**: Reduced (no regex scanning every 60 seconds)
+- **Reliability**: Improved (explicit status vs phrase matching)
+- **Code Complexity**: Reduced (~100 lines removed)
+- **Idle Detection**: Still uses scraping (checks for "Esc to interrupt" - no webhook alternative)
 
 ## Future Enhancements
 

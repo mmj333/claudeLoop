@@ -9,10 +9,11 @@
 - Different operations get different debounce times
 
 ### Debounce Times
-- Compact detection: 60 seconds (rarely changes quickly)
 - Prompt detection: 5 seconds (needs responsiveness)
 - Activity detection: 2 seconds (changes frequently)
-- Context check: 10 seconds (changes slowly)
+- Context check: 20 seconds (changes slowly)
+
+**Note**: Compact and auto-finish detection now use webhook status reports instead of phrase scraping.
 
 ### General Principles
 - Simple solutions over complex ones

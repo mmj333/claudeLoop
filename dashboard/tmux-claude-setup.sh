@@ -62,12 +62,8 @@ case "$ACTION" in
             # Create new session detached in the working directory
             tmux new-session -d -s "$SESSION_NAME" -n "claude" -c "$WORKING_DIR"
             
-            # Send initial message
-            tmux send-keys -t "$SESSION_NAME:0" "echo '🤖 Claude Loop Ready!'" Enter
-            tmux send-keys -t "$SESSION_NAME:0" "echo '   • Session: $SESSION_NAME'" Enter
-            tmux send-keys -t "$SESSION_NAME:0" "echo '   • Directory: $WORKING_DIR'" Enter
-            tmux send-keys -t "$SESSION_NAME:0" "echo '   • Dashboard will capture everything'" Enter
-            tmux send-keys -t "$SESSION_NAME:0" "echo ''" Enter
+            # Send initial message as a single multi-line echo
+            tmux send-keys -t "$SESSION_NAME:0" "echo -e '🤖 Claude Loop Ready!\\n   • Session: $SESSION_NAME\\n   • Directory: $WORKING_DIR\\n   • Dashboard will capture everything\\n'" Enter
             
             # Check if we have a tracked conversation for this session
             TRACKER_RESULT=$(node "$( dirname "$0" )/claude-session-tracker-simple.js" get "$SESSION_NAME" 2>/dev/null)
@@ -77,32 +73,26 @@ case "$ACTION" in
                 CONV_ID=$(echo "$TRACKER_RESULT" | jq -r '.conversationId // empty')
                 if [ -n "$CONV_ID" ]; then
                     echo "   • Loading tracked conversation: $CONV_ID"
-                    # Use claude --resume with specific conversation ID
-                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume $CONV_ID" Enter
+                    # Use claude --resume with --ide flag to auto-connect
+                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume $CONV_ID --ide" Enter
                 else
-                    # Fallback to resume
-                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume" Enter
+                    # Fallback to resume with auto-select
+                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume --ide" Enter
                     sleep 1
                     tmux send-keys -t "$SESSION_NAME:0" Enter
                 fi
             else
                 # No tracked conversation, use resume to show list
-                tmux send-keys -t "$SESSION_NAME:0" "claude --resume" Enter
+                tmux send-keys -t "$SESSION_NAME:0" "claude --resume --ide" Enter
                 sleep 1
                 # Auto-select the most recent session (first in list)
                 tmux send-keys -t "$SESSION_NAME:0" Enter
-                
+
                 # Start monitoring for conversation changes
                 sleep 2
                 node "$( dirname "$0" )/claude-conversation-monitor.js" "$SESSION_NAME" > "/tmp/claude-monitor-${SESSION_NAME}.log" 2>&1 &
                 echo "   • Started conversation monitor (PID: $!)"
             fi
-            sleep 2
-            
-            # Send /ide command to connect to VS Code
-            tmux send-keys -t "$SESSION_NAME:0" "/ide" Enter
-            sleep 0.5
-            tmux send-keys -t "$SESSION_NAME:0" Up Enter
             
             # Don't open browser windows - Claude is already in the terminal
             # open_claude
@@ -131,40 +121,51 @@ case "$ACTION" in
             echo "OK: Session '$SESSION_NAME' exists"
         else
             echo "Creating session '$SESSION_NAME'..."
-            tmux new-session -d -s "$SESSION_NAME" -n "claude"
-            tmux send-keys -t "$SESSION_NAME:0" "echo '🤖 Claude Loop Ready!'" Enter
-            
+
+            # Check for existing config file to get working directory
+            CONFIG_FILE="/home/michael/InfiniQuest/tmp/claudeLoop/dashboard/loop-config-${SESSION_NAME}.json"
+            WORKING_DIR="/home/michael/InfiniQuest"  # Default
+
+            if [ -f "$CONFIG_FILE" ]; then
+                # Extract working directory from config
+                CONFIG_DIR=$(cat "$CONFIG_FILE" | jq -r '.workingDirectory // empty')
+                if [ -n "$CONFIG_DIR" ] && [ -d "$CONFIG_DIR" ]; then
+                    WORKING_DIR="$CONFIG_DIR"
+                    echo "📁 Using working directory from config: $WORKING_DIR"
+                fi
+            fi
+
+            # Create new session in the working directory
+            tmux new-session -d -s "$SESSION_NAME" -n "claude" -c "$WORKING_DIR"
+            tmux send-keys -t "$SESSION_NAME:0" "echo -e '🤖 Claude Loop Ready!\\n   • Session: $SESSION_NAME\\n   • Directory: $WORKING_DIR\\n'" Enter
+
             # Check if we have a tracked conversation for this session
             TRACKER_RESULT=$(node "$( dirname "$0" )/claude-session-tracker-simple.js" get "$SESSION_NAME" 2>/dev/null)
-            
+
             if [ -n "$TRACKER_RESULT" ] && [ "$TRACKER_RESULT" != "null" ]; then
                 # We have a tracked conversation, try to load it
                 CONV_ID=$(echo "$TRACKER_RESULT" | jq -r '.conversationId // empty')
                 if [ -n "$CONV_ID" ]; then
                     echo "   • Loading tracked conversation: $CONV_ID"
-                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume $CONV_ID" Enter
+                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume $CONV_ID --ide" Enter
                 else
-                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume" Enter
+                    tmux send-keys -t "$SESSION_NAME:0" "claude --resume --ide" Enter
                     sleep 1
                     tmux send-keys -t "$SESSION_NAME:0" Enter
                 fi
             else
-                # Launch Claude with resume option
-                tmux send-keys -t "$SESSION_NAME:0" "claude --resume" Enter
+                # Launch Claude with resume option and auto-IDE
+                tmux send-keys -t "$SESSION_NAME:0" "claude --resume --ide" Enter
                 sleep 1
                 # Auto-select the most recent session (first in list)
                 tmux send-keys -t "$SESSION_NAME:0" Enter
-                
+
                 # Start monitoring for conversation changes
                 sleep 2
                 node "$( dirname "$0" )/claude-conversation-monitor.js" "$SESSION_NAME" > "/tmp/claude-monitor-${SESSION_NAME}.log" 2>&1 &
                 echo "   • Started conversation monitor (PID: $!)"
             fi
-            sleep 2
-            tmux send-keys -t "$SESSION_NAME:0" "/ide" Enter
-            sleep 0.5
-            tmux send-keys -t "$SESSION_NAME:0" Up Enter
-            
+
             echo "OK: Session '$SESSION_NAME' created"
         fi
         ;;

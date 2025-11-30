@@ -2517,7 +2517,15 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
 
       case '/api/webhook/status':
         if (method === 'POST') {
-          const statusData = JSON.parse(body);
+          // Parse JSON with error handling
+          let statusData;
+          try {
+            statusData = JSON.parse(body);
+          } catch (error) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid JSON in request body' }));
+            return;
+          }
 
           // Validate required fields
           const validStatuses = ['done', 'idle', 'waiting', 'stuck', 'needs-input', 'auto-compact'];
@@ -2571,53 +2579,58 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
 
           switch (statusData.status) {
             case 'done':
-              // Increment review count
-              sessionState.reviewCount++;
               const reviewsRequired = config.reviewSettings?.reviewsBeforeNextTask || 0;
 
-              log.info(`[Webhook] Review count for ${statusData.session}: ${sessionState.reviewCount}/${reviewsRequired}`);
+              // Only track review count if reviews are actually enabled
+              if (reviewsRequired > 0) {
+                sessionState.reviewCount++;
+                log.info(`[Webhook] Review count for ${statusData.session}: ${sessionState.reviewCount}/${reviewsRequired}`);
 
-              if (reviewsRequired > 0 && sessionState.reviewCount < reviewsRequired) {
-                // Need more reviews - send review request message
-                const reviewMessage = config.reviewSettings?.reviewMessage ||
-                  "Please review the work you just completed. Are there any improvements needed?";
+                if (sessionState.reviewCount < reviewsRequired) {
+                  // Need more reviews - send review request message
+                  const reviewMessage = config.reviewSettings?.reviewMessage ||
+                    "Please review the work you just completed. Are there any improvements needed?";
 
-                // Schedule the review message to be sent
-                response.action = 'review';
-                response.message = reviewMessage;
-                response.reviewsRemaining = reviewsRequired - sessionState.reviewCount;
+                  // Schedule the review message to be sent
+                  response.action = 'review';
+                  response.message = reviewMessage;
+                  response.reviewsRemaining = reviewsRequired - sessionState.reviewCount;
 
-                log.info(`[Webhook] Scheduling review message for ${statusData.session} (${response.reviewsRemaining} reviews remaining)`);
+                  log.info(`[Webhook] Scheduling review message for ${statusData.session} (${response.reviewsRemaining} reviews remaining)`);
 
-                // Send the review message after a short delay
-                setTimeout(async () => {
-                  try {
-                    await sendCustomMessage(reviewMessage, statusData.session);
-                    log.info(`[Webhook] Sent review message to ${statusData.session}`);
-                  } catch (error) {
-                    log.error(`[Webhook] Failed to send review message: ${error.message}`);
-                  }
-                }, 2000); // 2 second delay
+                  // Send the review message after a short delay
+                  setTimeout(async () => {
+                    try {
+                      await sendCustomMessage(reviewMessage, statusData.session);
+                      log.info(`[Webhook] Sent review message to ${statusData.session}`);
+                    } catch (error) {
+                      log.error(`[Webhook] Failed to send review message: ${error.message}`);
+                    }
+                  }, 2000); // 2 second delay
+                } else {
+                  // Reviews complete - ready for next task
+                  sessionState.reviewCount = 0; // Reset for next task
+                  response.action = 'next-task';
 
+                  const nextTaskMessage = config.reviewSettings?.nextTaskMessage ||
+                    "Work completed and reviewed. Please proceed to the next task.";
+
+                  log.info(`[Webhook] Reviews complete for ${statusData.session}, proceeding to next task`);
+
+                  // Send next task message after a short delay
+                  setTimeout(async () => {
+                    try {
+                      await sendCustomMessage(nextTaskMessage, statusData.session);
+                      log.info(`[Webhook] Sent next task message to ${statusData.session}`);
+                    } catch (error) {
+                      log.error(`[Webhook] Failed to send next task message: ${error.message}`);
+                    }
+                  }, 2000); // 2 second delay
+                }
               } else {
-                // Reviews complete or not required - ready for next task
-                sessionState.reviewCount = 0; // Reset for next task
+                // Reviews disabled - just acknowledge completion
                 response.action = 'next-task';
-
-                const nextTaskMessage = config.reviewSettings?.nextTaskMessage ||
-                  "Work completed and reviewed. Please proceed to the next task.";
-
-                log.info(`[Webhook] Reviews complete for ${statusData.session}, proceeding to next task`);
-
-                // Send next task message after a short delay
-                setTimeout(async () => {
-                  try {
-                    await sendCustomMessage(nextTaskMessage, statusData.session);
-                    log.info(`[Webhook] Sent next task message to ${statusData.session}`);
-                  } catch (error) {
-                    log.error(`[Webhook] Failed to send next task message: ${error.message}`);
-                  }
-                }, 2000); // 2 second delay
+                log.info(`[Webhook] Work complete for ${statusData.session} (reviews disabled)`);
               }
               break;
 
@@ -3027,7 +3040,9 @@ function analyzeContent(content, session, hints = {}) {
       // The status prompt is always at the bottom, no need to scan entire output
       const lines = content.split('\n');
       const last20Lines = lines.slice(-20).join('\n').toLowerCase();
-      result.isBusy = last20Lines.includes('esc to interrupt');
+      // Strip ANSI escape codes for reliable matching (Claude Code may add color formatting)
+      const cleanLines = last20Lines.replace(/\x1b\[[0-9;]*m/g, '');
+      result.isBusy = cleanLines.includes('esc to interrupt');
       sessionCache.activity.result = result.isBusy;
       sessionCache.activity.expires = now + CACHE_TTL.activity;
     }

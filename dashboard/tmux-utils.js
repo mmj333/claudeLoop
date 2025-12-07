@@ -274,14 +274,10 @@ async function restartClaude(session = 'claude', workingDir = '/home/michael/Inf
     
     // Change to the working directory
     await sendCommand(`cd ${workingDir}`, session);
-    
-    if (conversationId) {
-      // Start claude with resume option and project directory
-      await sendCommand(`claude --resume ${conversationId} --project "${workingDir}"`, session);
 
-      // Send /help to activate Claude
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for Claude to start
-      await sendCommand('/help', session);
+    if (conversationId) {
+      // Start claude with resume and --ide flag (no --project needed, we already cd'd)
+      await sendCommand(`claude --resume ${conversationId} --ide`, session);
 
       console.log(`[Tmux] Restarted Claude in session ${session} with conversation ${conversationId}`);
       return {
@@ -291,8 +287,8 @@ async function restartClaude(session = 'claude', workingDir = '/home/michael/Inf
         note: 'Claude will create a fork - update conversation association after restart'
       };
     } else {
-      // Just start Claude normally
-      await sendCommand('claude', session);
+      // Just start Claude normally with IDE connection
+      await sendCommand('claude --ide', session);
       console.log(`[Tmux] Restarted Claude in session ${session} (no resume)`);
       return { success: true, resumed: false };
     }

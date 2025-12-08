@@ -1908,6 +1908,16 @@
         }, { passive: false });
       }
 
+      // Add keyboard shortcuts for cycling through sessions
+      document.addEventListener('keydown', (e) => {
+        // Ctrl + ` (backtick) - cycle forward
+        // Ctrl + Shift + ` - cycle backward
+        if (e.ctrlKey && e.key === '`') {
+          e.preventDefault();
+          cycleSession(e.shiftKey ? -1 : 1);
+        }
+      });
+
       // Start monitoring
       startMonitoring();
       
@@ -2160,6 +2170,32 @@
       } else {
         tooltip.style.display = 'none';
       }
+    }
+
+    function cycleSession(direction = 1) {
+      // Get all session options from the dropdown
+      const sessionSelect = document.getElementById('session-select');
+      if (!sessionSelect || sessionSelect.options.length === 0) return;
+
+      const sessions = Array.from(sessionSelect.options).map(opt => opt.value);
+      const currentIndex = sessions.indexOf(currentSession);
+
+      if (currentIndex === -1) {
+        // Current session not in list, select first
+        selectSession(sessions[0]);
+        return;
+      }
+
+      // Calculate next index with wrap-around
+      let nextIndex = currentIndex + direction;
+      if (nextIndex >= sessions.length) {
+        nextIndex = 0; // Wrap to beginning
+      } else if (nextIndex < 0) {
+        nextIndex = sessions.length - 1; // Wrap to end
+      }
+
+      // Switch to the new session
+      selectSession(sessions[nextIndex]);
     }
 
     async function selectSession(session) {

@@ -2177,25 +2177,35 @@
       const sessionSelect = document.getElementById('session-select');
       if (!sessionSelect || sessionSelect.options.length === 0) return;
 
-      const sessions = Array.from(sessionSelect.options).map(opt => opt.value);
-      const currentIndex = sessions.indexOf(currentSession);
+      // Get only running sessions (those without grayed-out styling)
+      const allSessions = Array.from(sessionSelect.options);
+      const runningSessions = allSessions
+        .filter(opt => opt.style.color !== '#999' && opt.style.color !== 'rgb(153, 153, 153)')
+        .map(opt => opt.value);
+
+      if (runningSessions.length === 0) {
+        console.log('[Cycle] No running sessions to cycle through');
+        return;
+      }
+
+      const currentIndex = runningSessions.indexOf(currentSession);
 
       if (currentIndex === -1) {
-        // Current session not in list, select first
-        selectSession(sessions[0]);
+        // Current session not in running list, select first running session
+        selectSession(runningSessions[0]);
         return;
       }
 
       // Calculate next index with wrap-around
       let nextIndex = currentIndex + direction;
-      if (nextIndex >= sessions.length) {
+      if (nextIndex >= runningSessions.length) {
         nextIndex = 0; // Wrap to beginning
       } else if (nextIndex < 0) {
-        nextIndex = sessions.length - 1; // Wrap to end
+        nextIndex = runningSessions.length - 1; // Wrap to end
       }
 
       // Switch to the new session
-      selectSession(sessions[nextIndex]);
+      selectSession(runningSessions[nextIndex]);
     }
 
     async function selectSession(session) {

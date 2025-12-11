@@ -101,14 +101,33 @@ const dashboardUtils = {
    */
   convertAnsiToHtml: function(text) {
     if (!text) return '';
-    
+
+    // First, convert OSC 8 hyperlinks BEFORE HTML escaping
+    // Format: ESC]8;;URL\visible_text\ESC]8;;\  (or with ST: ESC]8;;URL ST visible_text ESC]8;; ST)
+    // The ESC character is \x1b (char code 27)
+    let withLinks = text;
+
+    // Match OSC 8 hyperlinks: \x1b]8;;URL\x1b\\text\x1b]8;;\x1b\\ or \x1b]8;;URL\x07text\x1b]8;;\x07
+    // Also handle the case where backslash is used as separator
+    const osc8Regex = /\x1b\]8;;([^\x07\x1b\\]*?)(?:\x1b\\|\x07|\x1b\x5c|\\)(.+?)\x1b\]8;;(?:\x1b\\|\x07|\x1b\x5c|\\)?/g;
+    withLinks = withLinks.replace(osc8Regex, (match, url, linkText) => {
+      // Create a placeholder that won't be affected by HTML escaping
+      // Use a unique marker that we'll replace after escaping
+      const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      return `\x00LINK_START\x00${safeUrl}\x00LINK_MID\x00${linkText}\x00LINK_END\x00`;
+    });
+
     // First escape HTML to prevent XSS
-    let processed = text
+    let processed = withLinks
       .split('&').join('&amp;')
       .split('<').join('&lt;')
       .split('>').join('&gt;')
       .split('"').join('&quot;')
       .split("'").join('&#x27;');
+
+    // Now convert our link placeholders to actual HTML links
+    processed = processed.replace(/\x00LINK_START\x00(.+?)\x00LINK_MID\x00(.+?)\x00LINK_END\x00/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #729fcf; text-decoration: underline;">$2</a>');
     
     // ANSI color code mapping
     const colorMap = {

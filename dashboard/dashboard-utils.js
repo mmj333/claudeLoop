@@ -108,8 +108,9 @@ const dashboardUtils = {
     let withLinks = text;
 
     // Match OSC 8 hyperlinks: \x1b]8;;URL\x1b\\text\x1b]8;;\x1b\\ or \x1b]8;;URL\x07text\x1b]8;;\x07
-    // Also handle the case where backslash is used as separator
-    const osc8Regex = /\x1b\]8;;([^\x07\x1b\\]*?)(?:\x1b\\|\x07|\x1b\x5c|\\)(.+?)\x1b\]8;;(?:\x1b\\|\x07|\x1b\x5c|\\)?/g;
+    // Also handle embedded ANSI color codes (Claude wraps links in color codes)
+    // Link text stops at ESC character, and we consume any trailing color reset before ]8;;
+    const osc8Regex = /\x1b\]8;;([^\x07\x1b\\]*?)(?:\x1b\\|\x07|\x1b\x5c|\\)([^\x1b]+?)(?:\x1b\[[0-9;]*m)?\x1b\]8;;(?:\x1b\\|\x07|\x1b\x5c|\\)?/g;
     withLinks = withLinks.replace(osc8Regex, (match, url, linkText) => {
       // Create a placeholder that won't be affected by HTML escaping
       // Use a unique marker that we'll replace after escaping

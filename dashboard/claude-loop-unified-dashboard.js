@@ -1556,6 +1556,8 @@ async function handleAPI(pathname, method, body, res, parsedUrl) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             success: true,
+            newCount: result.newCount || 0,
+            modifiedCount: result.modifiedCount || 0,
             updatedCount: result.updatedCount,
             deletedCount: result.deletedCount,
             totalCount: result.totalCount,

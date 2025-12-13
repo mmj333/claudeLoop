@@ -244,13 +244,28 @@ const dashboardUtils = {
    * @returns {string} HTML with color styles
    */
   convertAnsiToHtml: function(line) {
-    // First escape HTML to prevent XSS
-    let processed = line
+    // First, convert OSC 8 hyperlinks BEFORE HTML escaping
+    // Format: ESC]8;;URL ST visible_text ESC]8;; ST (where ST = ESC\ or BEL)
+    // Claude wraps links in color codes, so we handle embedded ANSI too
+    let withLinks = line;
+    const osc8Regex = /\x1b\]8;;([^\x07\x1b\\]*?)(?:\x1b\\|\x07|\x1b\x5c|\\)([^\x1b]+?)(?:\x1b\[[0-9;]*m)?\x1b\]8;;(?:\x1b\\|\x07|\x1b\x5c|\\)?/g;
+    withLinks = withLinks.replace(osc8Regex, (match, url, linkText) => {
+      // Create placeholder that survives HTML escaping
+      const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      return `\x00LINK_START\x00${safeUrl}\x00LINK_MID\x00${linkText}\x00LINK_END\x00`;
+    });
+
+    // Escape HTML to prevent XSS
+    let processed = withLinks
       .split('&').join('&amp;')
       .split('<').join('&lt;')
       .split('>').join('&gt;')
       .split('"').join('&quot;')
       .split("'").join('&#x27;');
+
+    // Convert link placeholders to actual HTML links
+    processed = processed.replace(/\x00LINK_START\x00(.+?)\x00LINK_MID\x00(.+?)\x00LINK_END\x00/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #729fcf; text-decoration: underline;">$2</a>');
     
     // Convert ANSI codes to HTML - handle all the patterns
     let result = '';

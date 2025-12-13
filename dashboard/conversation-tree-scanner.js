@@ -552,100 +552,134 @@ class ConversationTreeScanner {
     async incrementalScan() {
         console.log('Starting incremental conversation scan...');
         const startTime = Date.now();
-        
+
         const cache = await this.loadCache();
         const allFiles = await this.getAllConversationFiles();
-        
+
         // Get current IDs from filesystem
         const currentIds = new Set(allFiles.map(f => {
             const filePath = typeof f === 'string' ? f : f.path;
             return path.basename(filePath, '.jsonl');
         }));
         const cachedIds = new Set(cache.knownIds || Object.keys(cache.conversations));
-        
+
         // Find new conversations (in filesystem but not in cache)
         const newIds = [...currentIds].filter(id => !cachedIds.has(id));
-        
+
         // Find deleted conversations (in cache but not in filesystem)
         const deletedIds = [...cachedIds].filter(id => !currentIds.has(id));
-        
-        // Update all conversations with correct CWD and projectRoot from folder names
+
+        // Find modified conversations (file mtime differs from cached lastModified)
+        const modifiedIds = [];
+        for (const fileInfo of allFiles) {
+            const filePath = typeof fileInfo === 'string' ? fileInfo : fileInfo.path;
+            const convId = path.basename(filePath, '.jsonl');
+
+            // Skip new files (they'll be scanned anyway)
+            if (newIds.includes(convId)) continue;
+
+            // Check if file has been modified since last scan
+            if (cache.conversations[convId]) {
+                try {
+                    const stats = await fs.stat(filePath);
+                    const currentMtime = stats.mtime.toISOString();
+                    const cachedMtime = cache.conversations[convId].lastModified;
+
+                    if (cachedMtime && currentMtime !== cachedMtime) {
+                        console.log(`Detected modified conversation: ${convId}`);
+                        modifiedIds.push(convId);
+                    }
+                } catch (e) {
+                    // File stat failed, skip
+                }
+            }
+        }
+
+        // IDs that need full content scanning (new + modified)
+        const idsToScan = [...newIds, ...modifiedIds];
+
+        // Update metadata for conversations NOT being rescanned
         for (const fileInfo of allFiles) {
             const filePath = typeof fileInfo === 'string' ? fileInfo : fileInfo.path;
             const projectFolder = typeof fileInfo === 'object' ? fileInfo.projectFolder : null;
             const convId = path.basename(filePath, '.jsonl');
-            
-            // Update CWD and projectRoot for all conversations
+
+            // Skip if this will be fully scanned
+            if (idsToScan.includes(convId)) continue;
+
+            // Update CWD and projectRoot for existing conversations
             if (projectFolder && cache.conversations[convId]) {
-                let cwd = 'unknown';
-                
-                // Try to get the real CWD from the conversation file
-                try {
-                    const fileContent = await fs.readFile(filePath, 'utf8');
-                    const lines = fileContent.split('\n').slice(0, 20);
-                    
-                    for (const line of lines) {
-                        if (line.trim()) {
-                            try {
-                                const msg = JSON.parse(line);
-                                if (msg.cwd) {
-                                    cwd = msg.cwd;
-                                    break;
-                                } else if (msg.message && typeof msg.message === 'object' && msg.message.cwd) {
-                                    cwd = msg.message.cwd;
-                                    break;
-                                } else if (msg.workingDirectory) {
-                                    cwd = msg.workingDirectory;
-                                    break;
+                let cwd = cache.conversations[convId].cwd || 'unknown';
+
+                // Only re-read file if CWD is unknown
+                if (cwd === 'unknown') {
+                    try {
+                        const fileContent = await fs.readFile(filePath, 'utf8');
+                        const lines = fileContent.split('\n').slice(0, 20);
+
+                        for (const line of lines) {
+                            if (line.trim()) {
+                                try {
+                                    const msg = JSON.parse(line);
+                                    if (msg.cwd) {
+                                        cwd = msg.cwd;
+                                        break;
+                                    } else if (msg.message && typeof msg.message === 'object' && msg.message.cwd) {
+                                        cwd = msg.message.cwd;
+                                        break;
+                                    } else if (msg.workingDirectory) {
+                                        cwd = msg.workingDirectory;
+                                        break;
+                                    }
+                                } catch (e) {
+                                    // Skip malformed JSON lines
                                 }
-                            } catch (e) {
-                                // Skip malformed JSON lines
                             }
                         }
+                    } catch (e) {
+                        // Fall back to folder name parsing
                     }
-                } catch (e) {
-                    // Fall back to folder name parsing
+
+                    if (cwd === 'unknown') {
+                        cwd = this.parseFolderNameToPath(projectFolder);
+                    }
+                    cache.conversations[convId].cwd = cwd;
                 }
-                
-                // If we still don't have a CWD, fall back to parsing the folder name
-                // Try intelligent parsing by checking what actually exists on disk
-                if (cwd === 'unknown') {
-                    cwd = this.parseFolderNameToPath(projectFolder);
-                }
-                
-                cache.conversations[convId].cwd = cwd;
-                
+
                 // Get and set project root
                 const projectRoot = this.getProjectRoot(projectFolder, cwd);
                 cache.conversations[convId].projectRoot = projectRoot;
-                
-                // Also update file size while we're at it
-                const stats = await fs.stat(filePath);
-                cache.conversations[convId].fileSize = stats.size;
-                cache.conversations[convId].lastModified = stats.mtime.toISOString();
+
+                // Update file stats
+                try {
+                    const stats = await fs.stat(filePath);
+                    cache.conversations[convId].fileSize = stats.size;
+                    cache.conversations[convId].lastModified = stats.mtime.toISOString();
+                } catch (e) {
+                    // Stats failed, keep existing values
+                }
             }
         }
-        
-        // Only scan NEW conversations
+
+        // Scan NEW and MODIFIED conversations
         const updates = [];
-        for (const newId of newIds) {
+        for (const scanId of idsToScan) {
             const fileInfo = allFiles.find(f => {
                 const filePath = typeof f === 'string' ? f : f.path;
-                return path.basename(filePath, '.jsonl') === newId;
+                return path.basename(filePath, '.jsonl') === scanId;
             });
             if (fileInfo) {
-                console.log(`Scanning new conversation: ${newId}...`);
+                const isModified = modifiedIds.includes(scanId);
+                console.log(`Scanning ${isModified ? 'modified' : 'new'} conversation: ${scanId}...`);
                 const convData = await this.scanConversationFile(fileInfo);
                 
                 if (convData) {
-                    // Merge with any existing cache data
-                    if (cache.conversations[newId]) {
-                        convData.parentId = cache.conversations[newId].parentId || convData.parentId;
-                        convData.messageCount = cache.conversations[newId].messageCount || convData.messageCount;
-                        convData.firstUserMessage = cache.conversations[newId].firstUserMessage || convData.firstUserMessage;
+                    // Merge with any existing cache data (preserve parent relationship for modified files)
+                    if (cache.conversations[scanId]) {
+                        convData.parentId = cache.conversations[scanId].parentId || convData.parentId;
                     }
                     updates.push(convData);
-                    cache.conversations[newId] = convData;
+                    cache.conversations[scanId] = convData;
                 }
             }
         }
@@ -680,11 +714,13 @@ class ConversationTreeScanner {
         
         const elapsed = Date.now() - startTime;
         console.log(`Scan complete in ${elapsed}ms`);
-        console.log(`New: ${newIds.length}, Deleted: ${deletedIds.length}, Total: ${Object.keys(cache.conversations).length}`);
-        
+        console.log(`New: ${newIds.length}, Modified: ${modifiedIds.length}, Deleted: ${deletedIds.length}, Total: ${Object.keys(cache.conversations).length}`);
+
         return {
             cache: cache,
-            updatedCount: newIds.length,
+            newCount: newIds.length,
+            modifiedCount: modifiedIds.length,
+            updatedCount: newIds.length + modifiedIds.length,  // For backwards compatibility
             deletedCount: deletedIds.length,
             totalCount: Object.keys(cache.conversations).length
         };
